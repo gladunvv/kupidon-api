@@ -3,6 +3,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   MinLength,
 } from 'class-validator';
@@ -19,16 +20,20 @@ export class CreateUserDto {
   name: string;
 
   @IsNumber()
-  age: number;
+  @IsOptional()
+  age?: number;
 
   @IsString()
-  gender: string;
+  @IsOptional()
+  gender?: string;
 
   @IsString()
-  about: string;
+  @IsOptional()
+  about?: string;
 
   @IsString()
-  phone: string;
+  @IsOptional()
+  phone?: string;
 
-  interests: string[];
+  interests?: string[];
 }

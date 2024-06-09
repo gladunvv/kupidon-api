@@ -5,7 +5,7 @@ import { Document, Types } from 'mongoose';
 export type LikeDocument = Like & Document;
 
 @Schema({
-  collection: 'like',
+  collection: 'likes',
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 })
 export class Like {

@@ -8,7 +8,12 @@ async function bootstrap() {
   app.useGlobalPipes(validationPipe);
   const reflector = app.get(Reflector);
   app.useGlobalGuards(new JwtAuthGuard(reflector));
-  await app.listen(3000);
+  app.enableCors({
+    origin: 'http://localhost:3000',
+    methods: 'GET,POST',
+    allowedHeaders: 'Content-Type,Authorization',
+  });
+  await app.listen(8000);
 }
 
 bootstrap();

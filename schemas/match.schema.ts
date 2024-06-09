@@ -5,7 +5,7 @@ import { Document, Types } from 'mongoose';
 export type MatchDocument = Match & Document;
 
 @Schema({
-  collection: 'match',
+  collection: 'matches',
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 })
 export class Match {

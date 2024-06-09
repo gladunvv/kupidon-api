@@ -6,7 +6,7 @@ import { Module } from '@nestjs/common';
 export type DialogDocument = Dialog & Document;
 
 @Schema({
-  collection: 'dialog',
+  collection: 'dialogs',
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 })
 export class Dialog {

@@ -5,7 +5,7 @@ import { Document } from 'mongoose';
 export type UserDocument = User & Document;
 
 @Schema({
-  collection: 'user',
+  collection: 'users',
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 })
 export class User {

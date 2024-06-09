@@ -5,7 +5,7 @@ import { Document, Types } from 'mongoose';
 export type MessageDocument = Message & Document;
 
 @Schema({
-  collection: 'message',
+  collection: 'messages',
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 })
 export class Message {
