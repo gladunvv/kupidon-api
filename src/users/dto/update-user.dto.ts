@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsArray, IsNumber, IsIn } from 'class-validator';
 
 export class UpdateUserProfileDto {
   @IsString()
@@ -13,5 +13,12 @@ export class UpdateUserProfileDto {
   @IsOptional()
   interests?: string[];
 
-  // Поля для фотографий и т.д.
+  @IsNumber()
+  @IsOptional()
+  age?: number;
+
+  @IsString()
+  @IsOptional()
+  @IsIn(['male', 'female', 'other'])
+  gender?: string;
 }

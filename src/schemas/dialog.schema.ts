@@ -15,6 +15,21 @@ export class Dialog {
 
   @Prop({ type: [Types.ObjectId], ref: 'Message' })
   messages: Message[];
+
+  // Добавляем прямые ссылки на участников для быстрого доступа
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  user1: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  user2: Types.ObjectId;
+
+  // Последнее сообщение для превью в списке диалогов
+  @Prop({ type: Types.ObjectId, ref: 'Message' })
+  lastMessage: Types.ObjectId;
+
+  // Статус активности диалога
+  @Prop({ type: Boolean, default: true })
+  isActive: boolean;
 }
 
 const DialogSchema = SchemaFactory.createForClass(Dialog);

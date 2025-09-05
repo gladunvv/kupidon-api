@@ -9,12 +9,6 @@ export type UserDocument = User & Document;
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 })
 export class User {
-  @Prop({ unique: true })
-  email: string;
-
-  @Prop()
-  password: string;
-
   @Prop()
   name: string;
 
@@ -27,11 +21,14 @@ export class User {
   @Prop()
   about: string;
 
-  @Prop()
+  @Prop({ required: true })
   phone: string;
 
   @Prop()
   interests: string[];
+
+  @Prop({ type: [String], default: [] })
+  photos: string[];
 }
 
 const UserSchema = SchemaFactory.createForClass(User);

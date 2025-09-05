@@ -10,55 +10,171 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { DialogService } from '../dialog/dialog.service';
+import { JwtService } from '@nestjs/jwt';
+import { Logger } from '@nestjs/common';
 
 @WebSocketGateway({
-  namespace: '/chat',
   cors: {
-    origin: '*', // Настройте соответствующий источник
+    origin: 'http://localhost:5173',
+    credentials: true,
   },
 })
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer() server: Server;
+  private readonly logger = new Logger(ChatGateway.name);
 
-  constructor(private readonly dialogService: DialogService) {}
+  constructor(
+    private readonly dialogService: DialogService,
+    private readonly jwtService: JwtService,
+  ) {}
 
-  afterInit(_server: Server) {
-    console.log('WebSocket initialized');
+  afterInit(server: Server) {
+    this.logger.log('WebSocket Gateway initialized');
+
+    // Middleware для аутентификации
+    server.use(async (socket, next) => {
+      try {
+        const token =
+          socket.handshake.auth?.token ||
+          socket.handshake.headers?.authorization?.replace('Bearer ', '');
+
+        if (!token) {
+          throw new Error('No token provided');
+        }
+
+        const payload = this.jwtService.verify(token);
+        socket.data.userId = payload.sub;
+        socket.data.phone = payload.phone;
+
+        this.logger.log(
+          `Client authenticated: ${socket.id}, userId: ${payload.sub}`,
+        );
+        next();
+      } catch (error) {
+        this.logger.error(
+          `Authentication failed for ${socket.id}: ${error.message}`,
+        );
+        next(new Error('Authentication failed'));
+      }
+    });
   }
 
   handleConnection(client: Socket) {
-    console.log(`Client connected: ${client.id}`);
+    this.logger.log(
+      `Client connected: ${client.id}, userId: ${client.data.userId}`,
+    );
   }
 
   handleDisconnect(client: Socket) {
-    console.log(`Client disconnected: ${client.id}`);
+    this.logger.log(
+      `Client disconnected: ${client.id}, userId: ${client.data.userId}`,
+    );
   }
 
-  @SubscribeMessage('sendMessage')
-  async handleMessage(
+  @SubscribeMessage('join_dialog')
+  async handleJoinDialog(
+    @MessageBody() data: { dialogId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    try {
+      const { dialogId } = data;
+      const userId = client.data.userId;
+
+      if (!dialogId) {
+        client.emit('error', { message: 'Dialog ID is required' });
+        return;
+      }
+
+      // Проверяем, что пользователь имеет доступ к диалогу
+      const dialog = await this.dialogService.getDialogWithPartner(
+        dialogId,
+        userId,
+      );
+
+      if (!dialog) {
+        client.emit('error', { message: 'Dialog not found or access denied' });
+        return;
+      }
+
+      await client.join(dialogId);
+      this.logger.log(`Client ${client.id} joined dialog ${dialogId}`);
+
+      client.emit('joined_dialog', {
+        dialogId,
+        success: true,
+        partner: dialog.partner,
+      });
+    } catch (error) {
+      this.logger.error(`Error joining dialog: ${error.message}`);
+      client.emit('error', { message: 'Failed to join dialog' });
+    }
+  }
+
+  @SubscribeMessage('leave_dialog')
+  handleLeaveDialog(
+    @MessageBody() data: { dialogId: string },
+    @ConnectedSocket() client: Socket,
+  ) {
+    const { dialogId } = data;
+
+    if (dialogId) {
+      client.leave(dialogId);
+      this.logger.log(`Client ${client.id} left dialog ${dialogId}`);
+
+      client.emit('left_dialog', {
+        dialogId,
+        success: true,
+      });
+    }
+  }
+
+  @SubscribeMessage('send_message')
+  async handleSendMessage(
     @MessageBody() data: { dialogId: string; text: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const senderId = Array.isArray(client.handshake.query.userId)
-      ? client.handshake.query.userId[0]
-      : client.handshake.query.userId;
+    try {
+      const { dialogId, text } = data;
+      const userId = client.data.userId;
 
-    const message = await this.dialogService.sendMessage(
-      data.dialogId,
-      senderId,
-      data.text,
-    );
-    this.server.to(data.dialogId).emit('receiveMessage', message);
+      if (!dialogId || !text || text.trim().length === 0) {
+        client.emit('error', {
+          message: 'Dialog ID and message text are required',
+        });
+        return;
+      }
+
+      // Сохраняем сообщение в базе данных
+      const message = await this.dialogService.sendMessage(
+        dialogId,
+        userId,
+        text.trim(),
+      );
+
+      // Отправляем сообщение всем участникам диалога (включая отправителя)
+      this.server.to(dialogId).emit('new_message', {
+        _id: message._id,
+        text: message.text,
+        sender: {
+          _id: (message.sender as any)._id,
+          name: (message.sender as any).name,
+        },
+        dialogId,
+        created_at: (message as any).created_at,
+        isFromCurrentUser: userId === (message.sender as any)._id.toString(),
+      });
+
+      this.logger.log(`Message sent in dialog ${dialogId} by user ${userId}`);
+    } catch (error) {
+      this.logger.error(`Error sending message: ${error.message}`);
+      client.emit('error', { message: 'Failed to send message' });
+    }
   }
 
-  @SubscribeMessage('joinDialog')
-  handleJoinDialog(
-    @MessageBody('dialogId') dialogId: string,
-    @ConnectedSocket() client: Socket,
-  ) {
-    client.join(dialogId);
-    console.log(`Client ${client.id} joined dialog ${dialogId}`);
+  // Вспомогательный метод для отправки уведомлений пользователю
+  sendNotificationToUser(userId: string, event: string, data: any) {
+    this.server.emit(`user_${userId}`, { event, data });
   }
 }

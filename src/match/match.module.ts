@@ -5,7 +5,7 @@ import {
   DialogMongoModule,
   MatchMongoModule,
   LikeMongoModule,
-} from '../../schemas';
+} from '../schemas';
 
 @Module({
   imports: [LikeMongoModule, MatchMongoModule, DialogMongoModule],

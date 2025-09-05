@@ -8,24 +8,32 @@ import { MatchService } from './match/match.service';
 import { MatchModule } from './match/match.module';
 import { DialogService } from './dialog/dialog.service';
 import { DialogModule } from './dialog/dialog.module';
+import { UploadModule } from './upload/upload.module';
 import {
   DialogMongoModule,
   LikeMongoModule,
   MatchMongoModule,
   MessageMongoModule,
-} from 'schemas';
+} from 'src/schemas';
+import { RedisModule } from '@liaoliaots/nestjs-redis';
 
 @Module({
   imports: [
     MongooseModule.forRootAsync({
       useFactory: async () => ({
-        uri: 'mongodb://localhost/datingapp',
+        uri: process.env.MONGODB_URI || 'mongodb://mongo:27017/datingapp',
       }),
+    }),
+    RedisModule.forRoot({
+      config: {
+        url: process.env.REDIS_URL || 'redis://:redispass@redis:6379',
+      },
     }),
     AuthModule,
     UsersModule,
     DialogModule,
     MatchModule,
+    UploadModule,
     LikeMongoModule,
     MatchMongoModule,
     DialogMongoModule,
