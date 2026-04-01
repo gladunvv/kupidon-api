@@ -1,6 +1,6 @@
 {
   "name": "kupidon-api",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "dating app",
   "author": "Gladun Vladislav",
   "private": true,
@@ -17,7 +17,11 @@
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "test:e2e": "jest --config ./test/jest-e2e.json",
+    "seed": "ts-node -r tsconfig-paths/register src/seed/seed.command.ts",
+    "seed:build": "node dist/seed/seed.command.js",
+    "seed:test": "ts-node -r tsconfig-paths/register src/seed/test-isolated-seed.ts",
+    "seed:examples": "ts-node -r tsconfig-paths/register src/seed/example-usage.ts"
   },
   "dependencies": {
     "@liaoliaots/nestjs-redis": "^10.0.0",

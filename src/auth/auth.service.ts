@@ -30,10 +30,8 @@ export class AuthService {
     const isValid = await this.otpService.validateOtp(phone, otp);
     if (!isValid) {
       throw new UnauthorizedException(
-        ResponseHelper.error(
-          'Invalid OTP code',
-          ERROR_CODES.INVALID_OTP,
-        ).message,
+        ResponseHelper.error('Invalid OTP code', ERROR_CODES.INVALID_OTP)
+          .message,
       );
     }
 
@@ -45,7 +43,6 @@ export class AuthService {
 
     const tokens = this.generateTokens(user._id.toString(), user.phone);
 
-    // Устанавливаем refresh token в httpOnly cookie
     this.setRefreshTokenCookie(res, tokens.refresh_token);
 
     return ResponseHelper.success(
@@ -78,16 +75,13 @@ export class AuthService {
       if (!user) {
         res.clearCookie('refresh_token');
         throw new UnauthorizedException(
-          ResponseHelper.error(
-            'User not found',
-            ERROR_CODES.INVALID_TOKEN,
-          ).message,
+          ResponseHelper.error('User not found', ERROR_CODES.INVALID_TOKEN)
+            .message,
         );
       }
 
       const tokens = this.generateTokens(payload.sub, payload.phone);
 
-      // Обновляем refresh token в cookie
       this.setRefreshTokenCookie(res, tokens.refresh_token);
 
       return ResponseHelper.success(
@@ -127,10 +121,10 @@ export class AuthService {
   private setRefreshTokenCookie(res: Response, refreshToken: string): void {
     res.cookie('refresh_token', refreshToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production', // HTTPS в продакшене
+      secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 дней
-      path: '/', // Доступен для всех путей
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: '/',
     });
   }
 }

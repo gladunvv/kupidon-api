@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DialogService } from './dialog.service';
 import { DialogController } from './dialog.controller';
-import { ChatGateway } from '../geteway/chat.geteway';
+import { ChatGateway } from '../gateway/chat.gateway';
 import {
   DialogMongoModule,
   MatchMongoModule,

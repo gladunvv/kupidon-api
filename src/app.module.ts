@@ -4,11 +4,11 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/users.module';
-import { MatchService } from './match/match.service';
 import { MatchModule } from './match/match.module';
-import { DialogService } from './dialog/dialog.service';
 import { DialogModule } from './dialog/dialog.module';
 import { UploadModule } from './upload/upload.module';
+import { SeedModule } from './seed/seed.module';
+import { ReferenceModule } from './reference/reference.module';
 import {
   DialogMongoModule,
   LikeMongoModule,
@@ -21,12 +21,12 @@ import { RedisModule } from '@liaoliaots/nestjs-redis';
   imports: [
     MongooseModule.forRootAsync({
       useFactory: async () => ({
-        uri: process.env.MONGODB_URI || 'mongodb://mongo:27017/datingapp',
+        uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/datingapp',
       }),
     }),
     RedisModule.forRoot({
       config: {
-        url: process.env.REDIS_URL || 'redis://:redispass@redis:6379',
+        url: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
       },
     }),
     AuthModule,
@@ -34,12 +34,14 @@ import { RedisModule } from '@liaoliaots/nestjs-redis';
     DialogModule,
     MatchModule,
     UploadModule,
+    SeedModule,
+    ReferenceModule,
     LikeMongoModule,
     MatchMongoModule,
     DialogMongoModule,
     MessageMongoModule,
   ],
   controllers: [AppController],
-  providers: [AppService, MatchService, DialogService],
+  providers: [AppService],
 })
 export class AppModule {}

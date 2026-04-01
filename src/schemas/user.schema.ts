@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import { Document, Types } from 'mongoose';
 
 export type UserDocument = User & Document;
 
@@ -9,29 +9,93 @@ export type UserDocument = User & Document;
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 })
 export class User {
-  @Prop()
+  @Prop({ type: String })
   name: string;
 
-  @Prop()
+  @Prop({ type: Number, min: 18, max: 100 })
   age: number;
 
-  @Prop()
+  @Prop({ type: String, enum: ['male', 'female', 'other'] })
   gender: string;
 
-  @Prop()
+  @Prop({ type: String, maxlength: 500 })
   about: string;
 
-  @Prop({ required: true })
+  @Prop({ type: String, required: true, unique: true })
   phone: string;
-
-  @Prop()
-  interests: string[];
 
   @Prop({ type: [String], default: [] })
   photos: string[];
+
+  @Prop({ type: Types.ObjectId, ref: 'City' })
+  city?: Types.ObjectId;
+
+  @Prop({ type: [Types.ObjectId], ref: 'Interest', default: [] })
+  interests: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], ref: 'Goal', default: [] })
+  goals: Types.ObjectId[];
+
+  @Prop({ type: [Types.ObjectId], ref: 'LifestyleOption', default: [] })
+  lifestyleOptions: Types.ObjectId[];
+
+  @Prop({ type: String })
+  occupation?: string;
+
+  @Prop({ type: String })
+  education?: string;
+
+  @Prop({ type: Number, min: 150, max: 220 })
+  height?: number;
+
+  @Prop({ type: Boolean, default: true })
+  isActive: boolean;
+
+  @Prop({ type: Boolean, default: false })
+  isVerified: boolean;
+
+  @Prop({ type: Date })
+  lastActiveAt?: Date;
+
+  @Prop({
+    type: {
+      minAge: { type: Number, default: 18 },
+      maxAge: { type: Number, default: 50 },
+      maxDistance: { type: Number, default: 50 },
+      genders: { type: [String], default: [] },
+    },
+    default: {},
+  })
+  searchPreferences: {
+    minAge: number;
+    maxAge: number;
+    maxDistance: number;
+    genders: string[];
+  };
+
+  @Prop({
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point',
+    },
+  })
+  locationType?: 'Point';
+
+  @Prop({
+    type: [Number],
+    index: '2dsphere',
+  })
+  coordinates?: number[];
 }
 
-const UserSchema = SchemaFactory.createForClass(User);
+export const UserSchema = SchemaFactory.createForClass(User);
+
+UserSchema.index({ phone: 1 }, { unique: true });
+UserSchema.index({ city: 1, isActive: 1 });
+UserSchema.index({ coordinates: '2dsphere' });
+UserSchema.index({ age: 1, gender: 1, isActive: 1 });
+UserSchema.index({ lastActiveAt: -1 });
 
 @Module({
   imports: [

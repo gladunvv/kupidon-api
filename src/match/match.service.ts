@@ -1,4 +1,4 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import {
@@ -9,6 +9,13 @@ import {
   Match,
   Dialog,
 } from '../schemas';
+import {
+  addPartnerId,
+  lookupPartnerUser,
+  matchesForUserMatch,
+} from '../core/mongo/partner-aggregation';
+
+const PARTNER_FIELDS = { name: 1, age: 1, photos: 1, about: 1 };
 
 @Injectable()
 export class MatchService {
@@ -20,221 +27,196 @@ export class MatchService {
   ) {}
 
   async likeUser(userId: string, likedUserId: string) {
-    try {
-      // Преобразуем строки в ObjectId
-      const userObjectId = new Types.ObjectId(userId);
-      const likedUserObjectId = new Types.ObjectId(likedUserId);
+    const userObjectId = new Types.ObjectId(userId);
+    const likedUserObjectId = new Types.ObjectId(likedUserId);
 
-      // Проверяем, существует ли уже лайк
-      const existingLike = await this.likeModel.findOne({
-        userId: userObjectId,
-        likedUserId: likedUserObjectId,
-      });
+    const existingLike = await this.likeModel.findOne({
+      userId: userObjectId,
+      likedUserId: likedUserObjectId,
+    });
 
-      if (existingLike) {
-        // Лайк уже существует, ничего не делаем
-        return null;
-      }
-
-      // Создаем новый лайк
-      const like = new this.likeModel({
-        userId: userObjectId,
-        likedUserId: likedUserObjectId,
-      });
-      await like.save();
-
-      // Проверяем взаимный лайк
-      const reciprocalLike = await this.likeModel.findOne({
-        userId: likedUserObjectId,
-        likedUserId: userObjectId,
-      });
-
-      if (reciprocalLike) {
-        // Есть взаимный лайк - создаем матч и диалог
-
-        // Проверяем, не существует ли уже матч между этими пользователями
-        const existingMatch = await this.matchModel.findOne({
-          $or: [
-            { user1: userObjectId, user2: likedUserObjectId },
-            { user1: likedUserObjectId, user2: userObjectId },
-          ],
-        });
-
-        if (existingMatch) {
-          // Матч уже существует
-          const existingDialog = await this.dialogModel.findOne({
-            matchId: existingMatch._id,
-          });
-          return { match: existingMatch, dialog: existingDialog };
-        }
-
-        // Создаем новый матч
-        const match = new this.matchModel({
-          user1: userObjectId,
-          user2: likedUserObjectId,
-        });
-        await match.save();
-
-        // Создаем диалог для матча
-        const dialog = new this.dialogModel({
-          matchId: match._id,
-          messages: [],
-          user1: userObjectId,
-          user2: likedUserObjectId,
-          isActive: true,
-        });
-        await dialog.save();
-
-        return { match, dialog };
-      }
-
-      // Обычный лайк без взаимности
+    if (existingLike) {
       return null;
-    } catch (error) {
-      throw new BadRequestException(`Failed to process like: ${error.message}`);
     }
+
+    const like = new this.likeModel({
+      userId: userObjectId,
+      likedUserId: likedUserObjectId,
+    });
+    await like.save();
+
+    const reciprocalLike = await this.likeModel.findOne({
+      userId: likedUserObjectId,
+      likedUserId: userObjectId,
+    });
+
+    if (!reciprocalLike) {
+      return null;
+    }
+
+    return this.ensureMatchWithDialog(userObjectId, likedUserObjectId);
   }
 
-  // Получение списка матчей пользователя с информацией о партнерах
-  async getUserMatches(userId: string) {
-    try {
-      const userObjectId = new Types.ObjectId(userId);
+  private async ensureMatchWithDialog(
+    userObjectId: Types.ObjectId,
+    otherUserId: Types.ObjectId,
+  ) {
+    const existingMatch = await this.matchModel.findOne({
+      $or: [
+        { user1: userObjectId, user2: otherUserId },
+        { user1: otherUserId, user2: userObjectId },
+      ],
+    });
 
-      const matches = await this.matchModel
-        .aggregate([
-          // Фильтруем матчи где участвует пользователь
-          {
-            $match: {
-              $or: [{ user1: userObjectId }, { user2: userObjectId }],
-            },
-          },
-          // Определяем партнера
-          {
-            $addFields: {
-              partnerId: {
-                $cond: {
-                  if: { $eq: ['$user1', userObjectId] },
-                  then: '$user2',
-                  else: '$user1',
+    if (existingMatch) {
+      const existingDialog = await this.dialogModel.findOne({
+        matchId: existingMatch._id,
+      });
+      return { match: existingMatch, dialog: existingDialog };
+    }
+
+    const match = new this.matchModel({
+      user1: userObjectId,
+      user2: otherUserId,
+    });
+    await match.save();
+
+    const dialog = new this.dialogModel({
+      matchId: match._id,
+      messages: [],
+      user1: userObjectId,
+      user2: otherUserId,
+      isActive: true,
+    });
+    await dialog.save();
+
+    return { match, dialog };
+  }
+
+  async getUserMatches(userId: string) {
+    const userObjectId = new Types.ObjectId(userId);
+
+    return this.matchModel
+      .aggregate([
+        matchesForUserMatch(userObjectId),
+        addPartnerId(userObjectId),
+        lookupPartnerUser(PARTNER_FIELDS),
+        {
+          $lookup: {
+            from: 'dialogs',
+            localField: '_id',
+            foreignField: 'matchId',
+            as: 'dialog',
+            pipeline: [
+              {
+                $lookup: {
+                  from: 'messages',
+                  localField: 'lastMessage',
+                  foreignField: '_id',
+                  as: 'lastMessagesData',
+                  pipeline: [
+                    {
+                      $project: {
+                        text: 1,
+                        sender: 1,
+                        created_at: 1,
+                      },
+                    },
+                  ],
                 },
               },
-            },
-          },
-          // Получаем информацию о партнере
-          {
-            $lookup: {
-              from: 'users',
-              localField: 'partnerId',
-              foreignField: '_id',
-              as: 'partner',
-              pipeline: [
-                {
-                  $project: {
-                    name: 1,
-                    age: 1,
-                    photos: 1,
-                    about: 1,
+              {
+                $project: {
+                  messagesCount: { $size: '$messages' },
+                  lastMessagesData: {
+                    $arrayElemAt: ['$lastMessagesData', 0],
                   },
                 },
-                {
-                  $project: {
-                    // Исключаем приватную информацию
-                    phone: 0,
-                    __v: 0,
-                  },
+              },
+              {
+                $project: {
+                  user1: 0,
+                  user2: 0,
+                  created_at: 0,
+                  lastMessage: 0,
+                  messages: 0,
+                  __v: 0,
                 },
-              ],
-            },
+              },
+            ],
           },
-          // Получаем информацию о диалоге
-          {
-            $lookup: {
-              from: 'dialogs',
-              localField: '_id',
-              foreignField: 'matchId',
-              as: 'dialog',
-            },
+        },
+        {
+          $project: {
+            _id: 1,
+            created_at: 1,
+            partner: { $arrayElemAt: ['$partner', 0] },
+            dialog: { $arrayElemAt: ['$dialog', 0] },
+            hasDialog: { $gt: [{ $size: '$dialog' }, 0] },
           },
-          // Форматируем результат
-          {
-            $project: {
-              _id: 1,
-              created_at: 1,
-              partner: { $arrayElemAt: ['$partner', 0] },
-              dialog: { $arrayElemAt: ['$dialog', 0] },
-              hasDialog: { $gt: [{ $size: '$dialog' }, 0] },
-            },
-          },
-          // Сортируем по дате создания (новые сначала)
-          {
-            $sort: { created_at: -1 },
-          },
-        ])
-        .exec();
-
-      return matches;
-    } catch (error) {
-      throw new BadRequestException(`Failed to get matches: ${error.message}`);
-    }
+        },
+        { $sort: { created_at: -1 } },
+      ])
+      .exec();
   }
 
-  // Получение деталей конкретного матча
   async getMatchDetails(matchId: string, userId: string) {
-    try {
-      const userObjectId = new Types.ObjectId(userId);
-      const matchObjectId = new Types.ObjectId(matchId);
+    const userObjectId = new Types.ObjectId(userId);
+    const matchObjectId = new Types.ObjectId(matchId);
 
-      const match = await this.matchModel
-        .findOne({
-          _id: matchObjectId,
-          $or: [{ user1: userObjectId }, { user2: userObjectId }],
-        })
-        .populate({
-          path: 'user1 user2',
-          select: 'name age photos about -_id',
-        })
-        .exec();
+    const match = await this.matchModel
+      .findOne({
+        _id: matchObjectId,
+        $or: [{ user1: userObjectId }, { user2: userObjectId }],
+      })
+      .populate({
+        path: 'user1 user2',
+        select: 'name age photos about -_id',
+      })
+      .exec();
 
-      if (!match) {
-        throw new BadRequestException('Match not found or access denied');
-      }
-
-      // Определяем партнера
-      const isUser1 =
-        match.user1.equals?.(userObjectId) ?? match.user1.toString() === userId;
-      const partner = isUser1 ? match.user2 : match.user1;
-
-      // Получаем диалог
-      const dialog = await this.dialogModel
-        .findOne({ matchId: matchObjectId })
-        .populate({
-          path: 'lastMessage',
-          populate: {
-            path: 'sender',
-            select: 'name',
-          },
-        })
-        .exec();
-
-      return {
-        match: {
-          _id: match._id,
-          created_at: (match as any).created_at,
-        },
-        partner,
-        dialog: dialog
-          ? {
-              _id: dialog._id,
-              hasMessages: dialog.messages.length > 0,
-              lastMessage: dialog.lastMessage,
-              isActive: dialog.isActive,
-            }
-          : null,
-      };
-    } catch (error) {
-      throw new BadRequestException(
-        `Failed to get match details: ${error.message}`,
-      );
+    if (!match) {
+      throw new NotFoundException('Match not found or access denied');
     }
+
+    const partner = this.partnerFromMatch(match, userObjectId);
+
+    const dialog = await this.dialogModel
+      .findOne({ matchId: matchObjectId })
+      .populate({
+        path: 'lastMessage',
+        populate: {
+          path: 'sender',
+          select: 'name',
+        },
+      })
+      .exec();
+
+    return {
+      match: {
+        _id: match._id,
+        created_at: (match as MatchDocument & { created_at?: Date })
+          .created_at,
+      },
+      partner,
+      dialog: dialog
+        ? {
+            _id: dialog._id,
+            hasMessages: dialog.messages.length > 0,
+            lastMessage: dialog.lastMessage,
+            isActive: dialog.isActive,
+          }
+        : null,
+    };
+  }
+
+  private partnerFromMatch(
+    match: MatchDocument,
+    currentUserId: Types.ObjectId,
+  ) {
+    const id = (ref: Types.ObjectId | { _id: Types.ObjectId }) =>
+      ref instanceof Types.ObjectId ? ref : ref._id;
+
+    return id(match.user1).equals(currentUserId) ? match.user2 : match.user1;
   }
 }

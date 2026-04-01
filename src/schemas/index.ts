@@ -3,3 +3,8 @@ export * from './message.schema';
 export * from './like.schema';
 export * from './user.schema';
 export * from './match.schema';
+export * from './goal.schema';
+export * from './lifestyle-category.schema';
+export * from './lifestyle-option.schema';
+export * from './interest.schema';
+export * from './city.schema';

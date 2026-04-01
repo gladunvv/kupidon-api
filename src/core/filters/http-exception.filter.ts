@@ -22,7 +22,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
     let errorCode: string = ERROR_CODES.INTERNAL_SERVER_ERROR;
-    let details: any = undefined;
+    let details: unknown = undefined;
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -31,11 +31,15 @@ export class HttpExceptionFilter implements ExceptionFilter {
       if (typeof exceptionResponse === 'string') {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object') {
-        const responseObj = exceptionResponse as any;
-        message = responseObj.message || responseObj.error || message;
-        details = responseObj.details || responseObj;
+        const responseObj = exceptionResponse as Record<string, unknown> & {
+          message?: string | string[];
+          error?: string;
+          details?: unknown;
+        };
+        message =
+          (responseObj.message as string) || responseObj.error || message;
+        details = responseObj.details ?? responseObj;
 
-        // Определяем код ошибки на основе статуса
         switch (status) {
           case HttpStatus.UNAUTHORIZED:
             errorCode = ERROR_CODES.UNAUTHORIZED;
@@ -55,7 +59,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       }
     }
 
-    // Если это ошибка валидации
     if (Array.isArray(message)) {
       details = message;
       message = 'Validation failed';
@@ -75,7 +78,6 @@ export class HttpExceptionFilter implements ExceptionFilter {
       },
     };
 
-    // Логируем ошибку для отладки
     if (status >= 500) {
       console.error('Server Error:', {
         requestId,

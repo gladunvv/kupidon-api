@@ -12,6 +12,7 @@ import { Server, Socket } from 'socket.io';
 import { DialogService } from '../dialog/dialog.service';
 import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
+import { Types } from 'mongoose';
 
 @WebSocketGateway({
   cors: {
@@ -33,7 +34,6 @@ export class ChatGateway
   afterInit(server: Server) {
     this.logger.log('WebSocket Gateway initialized');
 
-    // Middleware для аутентификации
     server.use(async (socket, next) => {
       try {
         const token =
@@ -44,7 +44,9 @@ export class ChatGateway
           throw new Error('No token provided');
         }
 
-        const payload = this.jwtService.verify(token);
+        const payload = this.jwtService.verify<{ sub: string; phone?: string }>(
+          token,
+        );
         socket.data.userId = payload.sub;
         socket.data.phone = payload.phone;
 
@@ -87,7 +89,6 @@ export class ChatGateway
         return;
       }
 
-      // Проверяем, что пользователь имеет доступ к диалогу
       const dialog = await this.dialogService.getDialogWithPartner(
         dialogId,
         userId,
@@ -146,24 +147,28 @@ export class ChatGateway
         return;
       }
 
-      // Сохраняем сообщение в базе данных
       const message = await this.dialogService.sendMessage(
         dialogId,
         userId,
         text.trim(),
       );
 
-      // Отправляем сообщение всем участникам диалога (включая отправителя)
+      const sender = message.sender as unknown as {
+        _id: Types.ObjectId;
+        name: string;
+      };
+      const senderId = sender._id.toString();
+
       this.server.to(dialogId).emit('new_message', {
         _id: message._id,
         text: message.text,
         sender: {
-          _id: (message.sender as any)._id,
-          name: (message.sender as any).name,
+          _id: sender._id,
+          name: sender.name,
         },
         dialogId,
-        created_at: (message as any).created_at,
-        isFromCurrentUser: userId === (message.sender as any)._id.toString(),
+        created_at: (message as { created_at?: Date }).created_at,
+        isFromCurrentUser: userId === senderId,
       });
 
       this.logger.log(`Message sent in dialog ${dialogId} by user ${userId}`);
@@ -173,8 +178,7 @@ export class ChatGateway
     }
   }
 
-  // Вспомогательный метод для отправки уведомлений пользователю
-  sendNotificationToUser(userId: string, event: string, data: any) {
+  sendNotificationToUser(userId: string, event: string, data: unknown) {
     this.server.emit(`user_${userId}`, { event, data });
   }
 }

@@ -8,7 +8,20 @@ import {
   Message,
   MessageDocument,
   MatchDocument,
+  StatusMessage,
 } from '../schemas';
+import {
+  activeDialogMatch,
+  addPartnerId,
+  dialogsForUserMatch,
+  lookupPartnerUser,
+} from '../core/mongo/partner-aggregation';
+
+const PARTNER_FIELDS_FULL = { name: 1, age: 1, photos: 1, about: 1 };
+const PARTNER_FIELDS_LIST = {
+  name: 1,
+  photos: { $arrayElemAt: ['$photos', 0] },
+};
 
 @Injectable()
 export class DialogService {
@@ -31,60 +44,15 @@ export class DialogService {
     return dialog;
   }
 
-  // Получение диалога с информацией о партнере
   async getDialogWithPartner(dialogId: string, userId: string) {
     const userObjectId = new Types.ObjectId(userId);
     const dialogObjectId = new Types.ObjectId(dialogId);
 
     const dialogs = await this.dialogModel
       .aggregate([
-        // Фильтруем конкретный диалог где участвует пользователь
-        {
-          $match: {
-            _id: dialogObjectId,
-            $or: [{ user1: userObjectId }, { user2: userObjectId }],
-            isActive: true,
-          },
-        },
-        // Определяем партнера
-        {
-          $addFields: {
-            partnerId: {
-              $cond: {
-                if: { $eq: ['$user1', userObjectId] },
-                then: '$user2',
-                else: '$user1',
-              },
-            },
-          },
-        },
-        // Получаем информацию о партнере
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'partnerId',
-            foreignField: '_id',
-            as: 'partner',
-            pipeline: [
-              {
-                $project: {
-                  name: 1,
-                  age: 1,
-                  photos: 1,
-                  about: 1,
-                },
-              },
-              {
-                $project: {
-                  // Исключаем приватную информацию
-                  phone: 0,
-                  __v: 0,
-                },
-              },
-            ],
-          },
-        },
-        // Получаем сообщения с информацией об отправителях
+        activeDialogMatch(dialogObjectId, userObjectId),
+        addPartnerId(userObjectId),
+        lookupPartnerUser(PARTNER_FIELDS_FULL),
         {
           $lookup: {
             from: 'messages',
@@ -115,13 +83,10 @@ export class DialogService {
                   created_at: 1,
                 },
               },
-              {
-                $sort: { created_at: 1 }, // Сообщения по порядку
-              },
+              { $sort: { created_at: 1 } },
             ],
           },
         },
-        // Форматируем результат
         {
           $project: {
             _id: 1,
@@ -152,28 +117,33 @@ export class DialogService {
 
     const message = new this.messageModel({
       sender: new Types.ObjectId(senderId),
+      status: StatusMessage.SEND,
       text,
     });
     await message.save();
 
-    (dialog.messages as any).push(message._id);
-    (dialog as any).lastMessage = message._id;
-    (dialog as any).updated_at = new Date();
-    await dialog.save();
+    await this.dialogModel.findByIdAndUpdate(dialogId, {
+      $push: { messages: message._id },
+      lastMessage: message._id,
+      updated_at: new Date(),
+    });
 
-    // Возвращаем сообщение с информацией об отправителе
-    const messageWithSender = await this.messageModel
+    const populated = await this.messageModel
       .findById(message._id)
       .populate('sender', 'name')
       .exec();
 
-    return messageWithSender;
+    if (!populated) {
+      throw new NotFoundException('Message not found');
+    }
+
+    return populated;
   }
 
   async createDialog(matchId: string) {
     const match = await this.matchModel.findById(matchId);
     if (!match) {
-      throw new NotFoundException('Dialog not found');
+      throw new NotFoundException('Match not found');
     }
     const dialog = new this.dialogModel({
       matchId,
@@ -187,56 +157,14 @@ export class DialogService {
     return dialog;
   }
 
-  // Получение списка диалогов пользователя
   async getUserDialogs(userId: string) {
     const userObjectId = new Types.ObjectId(userId);
 
-    const dialogs = await this.dialogModel
+    return this.dialogModel
       .aggregate([
-        // Фильтруем диалоги где участвует пользователь
-        {
-          $match: {
-            $or: [{ user1: userObjectId }, { user2: userObjectId }],
-            isActive: true,
-          },
-        },
-        // Определяем партнера
-        {
-          $addFields: {
-            partnerId: {
-              $cond: {
-                if: { $eq: ['$user1', userObjectId] },
-                then: '$user2',
-                else: '$user1',
-              },
-            },
-          },
-        },
-        // Получаем информацию о партнере
-        {
-          $lookup: {
-            from: 'users',
-            localField: 'partnerId',
-            foreignField: '_id',
-            as: 'partner',
-            pipeline: [
-              {
-                $project: {
-                  name: 1,
-                  photos: { $arrayElemAt: ['$photos', 0] }, // Первое фото для превью
-                },
-              },
-              {
-                $project: {
-                  // Исключаем приватную информацию
-                  phone: 0,
-                  __v: 0,
-                },
-              },
-            ],
-          },
-        },
-        // Получаем последнее сообщение
+        dialogsForUserMatch(userObjectId),
+        addPartnerId(userObjectId),
+        lookupPartnerUser(PARTNER_FIELDS_LIST),
         {
           $lookup: {
             from: 'messages',
@@ -268,13 +196,11 @@ export class DialogService {
             ],
           },
         },
-        // Подсчитываем количество сообщений
         {
           $addFields: {
             messagesCount: { $size: '$messages' },
           },
         },
-        // Форматируем результат
         {
           $project: {
             _id: 1,
@@ -286,17 +212,11 @@ export class DialogService {
             isActive: 1,
           },
         },
-        // Сортируем по последнему обновлению
-        {
-          $sort: { updated_at: -1 },
-        },
+        { $sort: { updated_at: -1 } },
       ])
       .exec();
-
-    return dialogs;
   }
 
-  // Обновление lastMessage при отправке нового сообщения
   async updateLastMessage(dialogId: string, messageId: string) {
     await this.dialogModel
       .findByIdAndUpdate(dialogId, {

@@ -9,18 +9,22 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import cookieParser from 'cookie-parser';
 
+const ALLOWED_ORIGINS = [
+  'http://localhost:5174',
+  'http://localhost:5173',
+  'http://kupidons.ru',
+  'https://kupidons.ru',
+  'https://www.kupidons.ru',
+];
+
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // Поддержка cookies
   app.use(cookieParser());
-
-  // Статическая раздача загруженных файлов
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads',
   });
 
-  // Глобальные pipes, guards, interceptors, filters
   app.useGlobalPipes(validationPipe);
   app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new MulterExceptionFilter(), new HttpExceptionFilter());
@@ -28,25 +32,15 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
   app.useGlobalGuards(new JwtAuthGuard(reflector));
 
-  // CORS с поддержкой credentials для cookies
-
-  const allowedOrigins = [
-    'http://localhost:5173', // dev
-    'http://kupidons.ru', // если пока без HTTPS
-    'https://kupidons.ru', // прод с HTTPS
-    'https://www.kupidons.ru', // на всякий "www"
-  ];
-
   app.enableCors({
     origin: (origin, cb) => {
-      // Запросы без Origin (например, curl/Postman) пропускаем
       if (!origin) return cb(null, true);
-      if (allowedOrigins.includes(origin)) return cb(null, true);
+      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
       cb(new Error(`CORS blocked: ${origin}`));
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true, // обязательно, если используешь куки/Authorization
+    credentials: true,
   });
 
   await app.listen(8000);

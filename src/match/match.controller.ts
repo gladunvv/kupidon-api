@@ -10,8 +10,8 @@ import {
 } from '@nestjs/common';
 import { MatchService } from './match.service';
 import { JwtAuthGuard } from '../auth/guards/auth-guard';
-import { Types } from 'mongoose';
 import { ResponseHelper } from '../core/utils/response.helper';
+import { assertObjectId } from '../core/utils/mongo-id.util';
 
 @Controller('match')
 export class MatchController {
@@ -20,14 +20,10 @@ export class MatchController {
   @UseGuards(JwtAuthGuard)
   @Post('like')
   async likeUser(@Body('likedUserId') likedUserId: string, @Req() req) {
-    // Валидируем ObjectId
-    if (!Types.ObjectId.isValid(likedUserId)) {
-      throw new BadRequestException('Invalid user ID format');
-    }
+    assertObjectId(likedUserId, 'Invalid user ID format');
 
     const userId = req.user._id;
 
-    // Проверяем, что пользователь не лайкает сам себя
     if (userId === likedUserId) {
       throw new BadRequestException('Cannot like yourself');
     }
@@ -35,7 +31,6 @@ export class MatchController {
     const result = await this.matchService.likeUser(userId, likedUserId);
 
     if (result) {
-      // Взаимный лайк - создался матч
       return ResponseHelper.success(
         {
           match: result.match,
@@ -44,13 +39,9 @@ export class MatchController {
         },
         'Match created! You can start chatting now.',
       );
-    } else {
-      // Обычный лайк
-      return ResponseHelper.success(
-        { matched: false },
-        'Like sent successfully',
-      );
     }
+
+    return ResponseHelper.success({ matched: false }, 'Like sent successfully');
   }
 
   @UseGuards(JwtAuthGuard)
@@ -65,10 +56,7 @@ export class MatchController {
   @UseGuards(JwtAuthGuard)
   @Get(':matchId')
   async getMatchDetails(@Param('matchId') matchId: string, @Req() req) {
-    // Валидируем ObjectId
-    if (!Types.ObjectId.isValid(matchId)) {
-      throw new BadRequestException('Invalid match ID format');
-    }
+    assertObjectId(matchId, 'Invalid match ID format');
 
     const userId = req.user._id;
     const matchDetails = await this.matchService.getMatchDetails(
