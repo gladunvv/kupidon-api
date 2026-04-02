@@ -195,8 +195,7 @@ export class MatchService {
     return {
       match: {
         _id: match._id,
-        created_at: (match as MatchDocument & { created_at?: Date })
-          .created_at,
+        created_at: (match as MatchDocument & { created_at?: Date }).created_at,
       },
       partner,
       dialog: dialog

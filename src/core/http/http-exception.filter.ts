@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { ApiResponse } from '../types/api-response.interface';
-import { ERROR_CODES } from '../utils/response.helper';
+import { ERROR_CODES } from './error-codes';
 import { v4 as uuidv4 } from 'uuid';
 
 @Catch()

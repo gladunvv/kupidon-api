@@ -15,11 +15,23 @@ import {
 } from './dto/update-profile.dto';
 import { Request } from 'express';
 import { ResponseHelper } from '../core/utils/response.helper';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import { ParseObjectIdPipe } from 'src/core/pipes/parse-object-id.pipe';
+import { GetUsersQueryDto } from './dto/get-users-query.dto';
+import { GetNearbyUsersQueryDto } from './dto/get-nearby-users-query.dto';
 
+@ApiTags('Users')
+@ApiBearerAuth()
 @Controller('users')
 export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
+  @ApiOperation({ summary: 'Get current user profile' })
   @Get()
   async getProfile(@Req() req: Request) {
     const userId = req.user._id;
@@ -27,6 +39,7 @@ export class UsersController {
     return ResponseHelper.success(user, 'Profile retrieved successfully');
   }
 
+  @ApiOperation({ summary: 'Get profile completeness details' })
   @Get('profile/complete')
   async getCompleteProfile(@Req() req: Request) {
     const userId = req.user._id;
@@ -37,25 +50,21 @@ export class UsersController {
     );
   }
 
+  @ApiOperation({ summary: 'Get candidates for matching' })
   @Get('list')
-  async getUsersList(
-    @Req() req: Request,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
-  ) {
+  async getUsersList(@Req() req: Request, @Query() query: GetUsersQueryDto) {
     const currentUserId = req.user._id;
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
 
     const result = await this.usersService.findUsersForMatching(
       currentUserId,
-      pageNum,
-      limitNum,
+      query.page,
+      query.limit,
     );
 
     return ResponseHelper.success(result, 'Users list retrieved successfully');
   }
 
+  @ApiOperation({ summary: 'Update current user profile' })
   @Put()
   async updateProfile(
     @Req() req: Request,
@@ -69,6 +78,7 @@ export class UsersController {
     return ResponseHelper.success(updatedUser, 'Profile updated successfully');
   }
 
+  @ApiOperation({ summary: 'Update search preferences' })
   @Patch('search-preferences')
   async updateSearchPreferences(
     @Req() req: Request,
@@ -85,33 +95,28 @@ export class UsersController {
     );
   }
 
+  @ApiOperation({ summary: 'Find nearby users' })
   @Get('nearby')
   async getNearbyUsers(
     @Req() req: Request,
-    @Query('lat') lat?: string,
-    @Query('lng') lng?: string,
-    @Query('maxDistance') maxDistance?: string,
-    @Query('page') page: string = '1',
-    @Query('limit') limit: string = '10',
+    @Query() query: GetNearbyUsersQueryDto,
   ) {
     const userId = req.user._id;
-    const pageNum = parseInt(page, 10);
-    const limitNum = parseInt(limit, 10);
 
     const coordinates =
-      lat && lng
+      query.lat && query.lng
         ? {
-            latitude: parseFloat(lat),
-            longitude: parseFloat(lng),
+            latitude: query.lat,
+            longitude: query.lng,
           }
         : undefined;
 
     const result = await this.usersService.findNearbyUsers(
       userId,
       coordinates,
-      maxDistance ? parseInt(maxDistance, 10) : undefined,
-      pageNum,
-      limitNum,
+      query.maxDistance,
+      query.page,
+      query.limit,
     );
 
     return ResponseHelper.success(
@@ -120,10 +125,15 @@ export class UsersController {
     );
   }
 
+  @ApiOperation({ summary: 'Calculate compatibility with another user' })
+  @ApiParam({
+    name: 'targetUserId',
+    example: '66123456789abcdef0123456',
+  })
   @Get('compatibility/:targetUserId')
   async getCompatibility(
     @Req() req: Request,
-    @Param('targetUserId') targetUserId: string,
+    @Param('targetUserId', ParseObjectIdPipe) targetUserId: string,
   ) {
     const userId = req.user._id;
     const compatibility = await this.usersService.calculateCompatibility(

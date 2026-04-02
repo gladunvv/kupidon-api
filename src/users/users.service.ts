@@ -193,9 +193,7 @@ export class UsersService {
 
     const userDoc = user as UserDocument;
     const plain =
-      typeof userDoc.toObject === 'function'
-        ? userDoc.toObject()
-        : { ...user };
+      typeof userDoc.toObject === 'function' ? userDoc.toObject() : { ...user };
 
     return {
       ...plain,
@@ -248,12 +246,11 @@ export class UsersService {
 
     const searchCoordinates: [number, number] | undefined = coordinates
       ? [coordinates.longitude, coordinates.latitude]
-      : currentUser.coordinates &&
-          currentUser.coordinates.length >= 2
-        ? ([
-            currentUser.coordinates[0],
-            currentUser.coordinates[1],
-          ] as [number, number])
+      : currentUser.coordinates && currentUser.coordinates.length >= 2
+        ? ([currentUser.coordinates[0], currentUser.coordinates[1]] as [
+            number,
+            number,
+          ])
         : undefined;
 
     if (!searchCoordinates) {
@@ -325,8 +322,7 @@ export class UsersService {
       throw new NotFoundException('One or both users not found');
     }
 
-    const factors: Array<{ name: string; score: number; details: string }> =
-      [];
+    const factors: Array<{ name: string; score: number; details: string }> = [];
     let compatibilityScore = 0;
 
     const commonInterests = user1.interests.filter((interest1) =>

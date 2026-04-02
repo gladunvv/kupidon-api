@@ -4,86 +4,85 @@ import {
   Param,
   UseGuards,
   Req,
-  BadRequestException,
   Post,
   Body,
 } from '@nestjs/common';
 import { DialogService } from './dialog.service';
 import { JwtAuthGuard } from '../auth/guards/auth-guard';
-import { ResponseHelper } from '../core/utils/response.helper';
-import { assertObjectId } from '../core/utils/mongo-id.util';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import { CreateDialogDto } from './dto/dialog-create.dto';
+import { SendMessageDto } from './dto/dialog-send-message.dto';
+import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
+import { ResponseMessage } from 'src/core/decorators/response-message.decorator';
 
+@ApiTags('Dialogs')
+@ApiBearerAuth()
 @Controller('dialogs')
 export class DialogController {
   constructor(private readonly dialogService: DialogService) {}
 
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get current user dialogs' })
+  @ResponseMessage('Dialogs retrieved successfully')
   @Get()
   async getUserDialogs(@Req() req) {
     const userId = req.user._id;
-    const dialogs = await this.dialogService.getUserDialogs(userId);
 
-    return ResponseHelper.success(dialogs, 'Dialogs retrieved successfully');
+    return await this.dialogService.getUserDialogs(userId);
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Create dialog from match' })
+  @ResponseMessage('Dialog created successfully')
   @Post('create')
-  async createDialog(@Body('matchId') matchId: string) {
-    assertObjectId(matchId, 'Invalid match ID format');
-    const dialog = await this.dialogService.createDialog(matchId);
-
-    return ResponseHelper.success(dialog, 'Dialog created successfully');
+  async createDialog(@Body() dto: CreateDialogDto) {
+    return await this.dialogService.createDialog(dto.matchId);
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get dialog with partner and messages' })
+  @ApiParam({ name: 'id', example: '66123456789abcdef0123456' })
+  @ResponseMessage('Dialog retrieved successfully')
   @Get(':id')
-  async getDialog(@Param('id') id: string, @Req() req) {
-    assertObjectId(id, 'Invalid dialog ID format');
-
+  async getDialog(@Param('id', ParseObjectIdPipe) id: string, @Req() req) {
     const userId = req.user._id;
     const dialog = await this.dialogService.getDialogWithPartner(id, userId);
 
-    return ResponseHelper.success(dialog, 'Dialog retrieved successfully');
+    return dialog;
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get dialog messages only' })
+  @ApiParam({ name: 'id', example: '66123456789abcdef0123456' })
+  @ResponseMessage('Messages retrieved successfully')
   @Get(':id/messages')
-  async getMessages(@Param('id') id: string, @Req() req) {
-    assertObjectId(id, 'Invalid dialog ID format');
-
+  async getMessages(@Param('id', ParseObjectIdPipe) id: string, @Req() req) {
     const userId = req.user._id;
     const dialog = await this.dialogService.getDialogWithPartner(id, userId);
 
-    return ResponseHelper.success(
-      {
-        messages: dialog.messages,
-        partner: dialog.partner,
-        messagesCount: dialog.messagesCount,
-      },
-      'Messages retrieved successfully',
-    );
+    return {
+      messages: dialog.messages,
+      partner: dialog.partner,
+      messagesCount: dialog.messagesCount,
+    };
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Send message to dialog' })
+  @ApiParam({ name: 'id', example: '66123456789abcdef0123456' })
+  @ResponseMessage('Message sent successfully')
   @Post(':id/messages')
   async sendMessage(
-    @Param('id') id: string,
-    @Body('text') text: string,
+    @Param('id', ParseObjectIdPipe) id: string,
+    @Body() dto: SendMessageDto,
     @Req() req,
   ) {
-    assertObjectId(id, 'Invalid dialog ID format');
-
-    if (!text || text.trim().length === 0) {
-      throw new BadRequestException('Message text cannot be empty');
-    }
-
     const userId = req.user._id;
-    const message = await this.dialogService.sendMessage(
-      id,
-      userId,
-      text.trim(),
-    );
-
-    return ResponseHelper.success(message, 'Message sent successfully');
+    return await this.dialogService.sendMessage(id, userId, dto.text);
   }
 }

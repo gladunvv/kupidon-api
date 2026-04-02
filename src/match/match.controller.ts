@@ -10,54 +10,64 @@ import {
 } from '@nestjs/common';
 import { MatchService } from './match.service';
 import { JwtAuthGuard } from '../auth/guards/auth-guard';
-import { ResponseHelper } from '../core/utils/response.helper';
-import { assertObjectId } from '../core/utils/mongo-id.util';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiTags,
+} from '@nestjs/swagger';
+import { LikeUserDto } from './dto/like-user.dto';
+import { ParseObjectIdPipe } from 'src/core/pipes/parse-object-id.pipe';
+import { ResponseMessage } from 'src/core/decorators/response-message.decorator';
 
+@ApiTags('Match')
+@ApiBearerAuth()
 @Controller('match')
 export class MatchController {
   constructor(private readonly matchService: MatchService) {}
 
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Like another user' })
+  @ResponseMessage('Like sent successfully')
   @Post('like')
-  async likeUser(@Body('likedUserId') likedUserId: string, @Req() req) {
-    assertObjectId(likedUserId, 'Invalid user ID format');
-
+  async likeUser(@Body() dto: LikeUserDto, @Req() req) {
     const userId = req.user._id;
 
-    if (userId === likedUserId) {
+    if (userId === dto.likedUserId) {
       throw new BadRequestException('Cannot like yourself');
     }
 
-    const result = await this.matchService.likeUser(userId, likedUserId);
+    const result = await this.matchService.likeUser(userId, dto.likedUserId);
 
     if (result) {
-      return ResponseHelper.success(
-        {
-          match: result.match,
-          dialog: result.dialog,
-          matched: true,
-        },
-        'Match created! You can start chatting now.',
-      );
+      return {
+        match: result.match,
+        dialog: result.dialog,
+        matched: true,
+        message: 'Match created! You can start chatting now.',
+      };
     }
 
-    return ResponseHelper.success({ matched: false }, 'Like sent successfully');
+    return { matched: false };
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get current user matches' })
+  @ResponseMessage('Matches retrieved successfully')
   @Get()
   async getUserMatches(@Req() req) {
     const userId = req.user._id;
-    const matches = await this.matchService.getUserMatches(userId);
-
-    return ResponseHelper.success(matches, 'Matches retrieved successfully');
+    return await this.matchService.getUserMatches(userId);
   }
 
   @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get match details' })
+  @ApiParam({ name: 'matchId', example: '66123456789abcdef0123456' })
   @Get(':matchId')
-  async getMatchDetails(@Param('matchId') matchId: string, @Req() req) {
-    assertObjectId(matchId, 'Invalid match ID format');
-
+  async getMatchDetails(
+    @Param('matchId', ParseObjectIdPipe) matchId: string,
+    @Req() req,
+  ) {
     const userId = req.user._id;
     const matchDetails = await this.matchService.getMatchDetails(
       matchId,

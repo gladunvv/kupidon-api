@@ -22,10 +22,8 @@ export class UploadService {
     const user = await this.userModel.findById(userId);
     if (!user) {
       throw new NotFoundException(
-        ResponseHelper.error(
-          'User not found',
-          ERROR_CODES.USER_NOT_FOUND,
-        ).message,
+        ResponseHelper.error('User not found', ERROR_CODES.USER_NOT_FOUND)
+          .message,
       );
     }
 
@@ -36,7 +34,7 @@ export class UploadService {
       for (const file of photos) {
         try {
           await unlink(file.path);
-        } catch (error) {
+        } catch (_error) {
           // Игнорируем ошибку
         }
       }
@@ -69,10 +67,8 @@ export class UploadService {
     const user = await this.userModel.findById(userId);
     if (!user) {
       throw new NotFoundException(
-        ResponseHelper.error(
-          'User not found',
-          ERROR_CODES.USER_NOT_FOUND,
-        ).message,
+        ResponseHelper.error('User not found', ERROR_CODES.USER_NOT_FOUND)
+          .message,
       );
     }
 
@@ -86,7 +82,7 @@ export class UploadService {
     // Удаляем файл с диска
     try {
       await unlink(join(process.cwd(), photoPath));
-    } catch (error) {
+    } catch (_error) {
       // Игнорируем ошибку, если файл не найден
     }
 
@@ -105,10 +101,8 @@ export class UploadService {
     const user = await this.userModel.findById(userId);
     if (!user) {
       throw new NotFoundException(
-        ResponseHelper.error(
-          'User not found',
-          ERROR_CODES.USER_NOT_FOUND,
-        ).message,
+        ResponseHelper.error('User not found', ERROR_CODES.USER_NOT_FOUND)
+          .message,
       );
     }
 
@@ -153,10 +147,8 @@ export class UploadService {
     const user = await this.userModel.findById(userId);
     if (!user) {
       throw new NotFoundException(
-        ResponseHelper.error(
-          'User not found',
-          ERROR_CODES.USER_NOT_FOUND,
-        ).message,
+        ResponseHelper.error('User not found', ERROR_CODES.USER_NOT_FOUND)
+          .message,
       );
     }
 

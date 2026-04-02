@@ -5,11 +5,11 @@ export * from './types/api-response.interface';
 export * from './utils/response.helper';
 
 // Interceptors
-export * from './interceptors/response.interceptor';
+export * from './http/response.interceptor';
 
 // Filters
-export * from './filters/http-exception.filter';
-export * from './filters/multer-exception.filter';
+export * from './http/http-exception.filter';
+export * from './http/multer-exception.filter';
 
 // Decorators
 export * from './decorators/public.decorator';

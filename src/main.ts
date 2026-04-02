@@ -2,12 +2,13 @@ import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { validationPipe } from './core/pipes/validation.pipe';
 import { JwtAuthGuard } from './auth/guards/auth-guard';
-import { ResponseInterceptor } from './core/interceptors/response.interceptor';
-import { HttpExceptionFilter } from './core/filters/http-exception.filter';
-import { MulterExceptionFilter } from './core/filters/multer-exception.filter';
+import { ResponseInterceptor } from './core/http/response.interceptor';
+import { HttpExceptionFilter } from './core/http/http-exception.filter';
+import { MulterExceptionFilter } from './core/http/multer-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import cookieParser from 'cookie-parser';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 const ALLOWED_ORIGINS = [
   'http://localhost:5174',
@@ -19,6 +20,17 @@ const ALLOWED_ORIGINS = [
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Kupidon API')
+    .setDescription('OpenAPI schema for Kupidon backend')
+    .setVersion('1.0')
+    .addBearerAuth()
+    .build();
+  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('docs', app, swaggerDocument, {
+    jsonDocumentUrl: 'docs-json',
+  });
 
   app.use(cookieParser());
   app.useStaticAssets(join(process.cwd(), 'uploads'), {

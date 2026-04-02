@@ -89,10 +89,7 @@ export class ReferenceService {
         isActive: true,
         coordinates: {
           $near: {
-            $geometry: {
-              type: 'Point',
-              coordinates: [longitude, latitude],
-            },
+            $geometry: { type: 'Point', coordinates: [longitude, latitude] },
             $maxDistance: maxDistance * 1000,
           },
         },
@@ -147,27 +144,16 @@ export class ReferenceService {
   }
 
   async getAllReferences() {
-    const [
-      cities,
-      interests,
-      goals,
-      lifestyleCategories,
-      lifestyleOptions,
-    ] = await Promise.all([
-      this.getPopularCities(30),
-      this.getInterests(),
-      this.getGoals(),
-      this.getLifestyleCategories(),
-      this.getAllLifestyleOptions(),
-    ]);
+    const [cities, interests, goals, lifestyleCategories, lifestyleOptions] =
+      await Promise.all([
+        this.getPopularCities(30),
+        this.getInterests(),
+        this.getGoals(),
+        this.getLifestyleCategories(),
+        this.getAllLifestyleOptions(),
+      ]);
 
-    return {
-      cities,
-      interests,
-      goals,
-      lifestyleCategories,
-      lifestyleOptions,
-    };
+    return { cities, interests, goals, lifestyleCategories, lifestyleOptions };
   }
 
   async getStats() {

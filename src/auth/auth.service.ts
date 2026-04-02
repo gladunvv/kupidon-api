@@ -17,16 +17,16 @@ export class AuthService {
     private otpService: OtpService,
   ) {}
 
-  async sendOtp(phone: string): Promise<ApiResponse> {
+  async sendOtp(phone: string): Promise<{ message: string }> {
     const otp = await this.otpService.generateOtp(phone);
     await this.otpService.sendOtp(phone, otp);
-    return ResponseHelper.message('OTP sent successfully');
+    return { message: 'OTP sent successfully' };
   }
 
   async verifyOtp(
     { phone, otp }: VerifyOtpDto,
     res: Response,
-  ): Promise<ApiResponse<{ access_token: string; user: User }>> {
+  ): Promise<{ access_token: string; user: User }> {
     const isValid = await this.otpService.validateOtp(phone, otp);
     if (!isValid) {
       throw new UnauthorizedException(
@@ -45,13 +45,10 @@ export class AuthService {
 
     this.setRefreshTokenCookie(res, tokens.refresh_token);
 
-    return ResponseHelper.success(
-      {
-        access_token: tokens.access_token,
-        user: user.toObject(),
-      },
-      'OTP verified successfully',
-    );
+    return {
+      access_token: tokens.access_token,
+      user: user.toObject(),
+    };
   }
 
   async refreshToken(

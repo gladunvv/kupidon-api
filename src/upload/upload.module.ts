@@ -11,14 +11,15 @@ import { UserMongoModule } from '../schemas';
     MulterModule.register({
       storage: diskStorage({
         destination: './uploads/photos',
-        filename: (req, file, callback) => {
+        filename: (_req, file, callback) => {
           // Генерируем уникальное имя файла
-          const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+          const uniqueSuffix =
+            Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           callback(null, `photo-${uniqueSuffix}${ext}`);
         },
       }),
-      fileFilter: (req, file, callback) => {
+      fileFilter: (_req, file, callback) => {
         // Проверяем тип файла
         if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
           return callback(new Error('Only image files are allowed!'), false);
