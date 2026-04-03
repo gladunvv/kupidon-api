@@ -49,6 +49,7 @@ export class AuthController {
   @ResponseMessage('Token cleared successfully')
   @Post('logout')
   async logout(@Res({ passthrough: true }) res: Response) {
-    return this.authService.logout(res);
+    await this.authService.logout(res);
+    return null;
   }
 }

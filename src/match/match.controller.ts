@@ -2,7 +2,6 @@ import {
   Controller,
   Post,
   Body,
-  Req,
   UseGuards,
   BadRequestException,
   Get,
@@ -19,6 +18,7 @@ import {
 import { LikeUserDto } from './dto/like-user.dto';
 import { ParseObjectIdPipe } from 'src/core/pipes/parse-object-id.pipe';
 import { ResponseMessage } from 'src/core/decorators/response-message.decorator';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 
 @ApiTags('Match')
 @ApiBearerAuth()
@@ -30,9 +30,7 @@ export class MatchController {
   @ApiOperation({ summary: 'Like another user' })
   @ResponseMessage('Like sent successfully')
   @Post('like')
-  async likeUser(@Body() dto: LikeUserDto, @Req() req) {
-    const userId = req.user._id;
-
+  async likeUser(@Body() dto: LikeUserDto, @CurrentUser('_id') userId: string) {
     if (userId === dto.likedUserId) {
       throw new BadRequestException('Cannot like yourself');
     }
@@ -55,28 +53,19 @@ export class MatchController {
   @ApiOperation({ summary: 'Get current user matches' })
   @ResponseMessage('Matches retrieved successfully')
   @Get()
-  async getUserMatches(@Req() req) {
-    const userId = req.user._id;
-    return await this.matchService.getUserMatches(userId);
+  async getUserMatches(@CurrentUser('_id') userId: string) {
+    return this.matchService.getUserMatches(userId);
   }
 
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get match details' })
   @ApiParam({ name: 'matchId', example: '66123456789abcdef0123456' })
+  @ResponseMessage('Match details retrieved successfully')
   @Get(':matchId')
   async getMatchDetails(
     @Param('matchId', ParseObjectIdPipe) matchId: string,
-    @Req() req,
+    @CurrentUser('_id') userId: string,
   ) {
-    const userId = req.user._id;
-    const matchDetails = await this.matchService.getMatchDetails(
-      matchId,
-      userId,
-    );
-
-    return ResponseHelper.success(
-      matchDetails,
-      'Match details retrieved successfully',
-    );
+    return this.matchService.getMatchDetails(matchId, userId);
   }
 }

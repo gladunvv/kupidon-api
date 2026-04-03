@@ -12,7 +12,7 @@ import {
   LifestyleCategoryDocument,
   LifestyleOption,
   LifestyleOptionDocument,
-} from '../schemas';
+} from './schemas';
 
 interface CitySearchOptions {
   countryCode?: string;

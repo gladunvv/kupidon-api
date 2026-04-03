@@ -2,13 +2,10 @@ import { Module } from '@nestjs/common';
 import { DialogService } from './dialog.service';
 import { DialogController } from './dialog.controller';
 import { ChatGateway } from '../gateway/chat.gateway';
-import {
-  DialogMongoModule,
-  MatchMongoModule,
-  MessageMongoModule,
-} from '../schemas';
+import { DialogMongoModule } from './schemas/dialog.schema';
+import { MessageMongoModule } from './schemas/message.schema';
+import { MatchMongoModule } from '../match/schemas/match.schema';
 import { JwtModule } from '@nestjs/jwt';
-import { jwtSecret } from './../jwtSecret';
 
 @Module({
   imports: [
@@ -16,7 +13,7 @@ import { jwtSecret } from './../jwtSecret';
     MessageMongoModule,
     MatchMongoModule,
     JwtModule.register({
-      secret: jwtSecret.secret,
+      secret: process.env.JWT_SECRET || 'secret',
       signOptions: { expiresIn: '1h' },
     }),
   ],

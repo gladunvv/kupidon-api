@@ -38,7 +38,6 @@ async function testIsolatedSeed() {
 
     console.log('\n🎉 Все тесты пройдены успешно!');
     console.log('Изолированный seed сервис работает корректно.');
-
   } catch (error) {
     console.error('\n❌ Ошибка при тестировании:', error);
     process.exit(1);

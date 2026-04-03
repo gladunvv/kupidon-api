@@ -12,7 +12,7 @@ import {
   InterestDocument,
   City,
   CityDocument,
-} from '../schemas';
+} from 'src/reference/schemas';
 import { SeedDataService } from './seed-data.service';
 
 export interface SeedOptions {
@@ -48,11 +48,7 @@ export class SeedService {
    * Запускает процесс заполнения базы данных
    */
   async run(options: SeedOptions = {}): Promise<void> {
-    const {
-      clearExisting = true,
-      models = ['all'],
-      verbose = true,
-    } = options;
+    const { clearExisting = true, models = ['all'], verbose = true } = options;
 
     this.logger.log('🌱 Начинаем заполнение базы данных...');
 
@@ -92,7 +88,7 @@ export class SeedService {
     verbose: boolean,
   ): Promise<void> {
     const modelName = 'LifestyleCategory';
-    
+
     if (clearExisting) {
       await this.clearModel(this.lifestyleCategoryModel, modelName, verbose);
     }
@@ -114,7 +110,7 @@ export class SeedService {
     verbose: boolean,
   ): Promise<void> {
     const modelName = 'LifestyleOption';
-    
+
     if (clearExisting) {
       await this.clearModel(this.lifestyleOptionModel, modelName, verbose);
     }
@@ -131,9 +127,12 @@ export class SeedService {
   /**
    * Заполняет цели
    */
-  private async seedGoals(clearExisting: boolean, verbose: boolean): Promise<void> {
+  private async seedGoals(
+    clearExisting: boolean,
+    verbose: boolean,
+  ): Promise<void> {
     const modelName = 'Goal';
-    
+
     if (clearExisting) {
       await this.clearModel(this.goalModel, modelName, verbose);
     }
@@ -150,7 +149,7 @@ export class SeedService {
     verbose: boolean,
   ): Promise<void> {
     const modelName = 'Interest';
-    
+
     if (clearExisting) {
       await this.clearModel(this.interestModel, modelName, verbose);
     }
@@ -167,7 +166,7 @@ export class SeedService {
     verbose: boolean,
   ): Promise<void> {
     const modelName = 'City';
-    
+
     if (clearExisting) {
       await this.clearModel(this.cityModel, modelName, verbose);
     }
@@ -217,7 +216,8 @@ export class SeedService {
     } catch (error) {
       // Игнорируем ошибки дублирования ключей
       if (error.code === 11000) {
-        const insertedCount = data.length - error.result.writeErrors?.length || 0;
+        const insertedCount =
+          data.length - error.result.writeErrors?.length || 0;
         if (verbose) {
           this.logger.log(
             `✨ Добавлено ${insertedCount} записей в ${modelName} (некоторые уже существовали)`,

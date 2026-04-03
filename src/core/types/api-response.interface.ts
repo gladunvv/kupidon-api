@@ -1,23 +1,3 @@
-export interface ApiResponse<T = any> {
-  success: boolean;
-  message: string;
-  data?: T;
-  error?: {
-    code: string;
-    details?: any;
-  };
-  meta?: {
-    timestamp: string;
-    requestId?: string;
-    pagination?: {
-      page: number;
-      limit: number;
-      total: number;
-      hasNext: boolean;
-    };
-  };
-}
-
 export interface PaginationMeta {
   page: number;
   limit: number;
@@ -25,18 +5,29 @@ export interface PaginationMeta {
   hasNext: boolean;
 }
 
+export interface ResponseMeta {
+  timestamp: string;
+  requestId?: string;
+  pagination?: PaginationMeta;
+}
+
 export interface ErrorResponse {
   code: string;
-  details?: any;
+  details?: unknown;
 }
 
-// Типы для различных статусов ответов
-export interface SuccessResponse<T = any> extends ApiResponse<T> {
+export interface SuccessApiResponse<T = unknown> {
   success: true;
+  message: string;
   data: T;
+  meta?: ResponseMeta;
 }
 
-export interface ErrorApiResponse extends ApiResponse {
+export interface ErrorApiResponse {
   success: false;
+  message: string;
   error: ErrorResponse;
+  meta?: ResponseMeta;
 }
+
+export type ApiResponse<T = unknown> = SuccessApiResponse<T> | ErrorApiResponse;

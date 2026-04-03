@@ -1,19 +1,15 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import {
-  DialogDocument,
-  MatchDocument,
-  LikeDocument,
-  Like,
-  Match,
-  Dialog,
-} from '../schemas';
+
 import {
   addPartnerId,
   lookupPartnerUser,
   matchesForUserMatch,
 } from '../core/mongo/partner-aggregation';
+import { Like, LikeDocument } from './schemas/like.schema';
+import { Match, MatchDocument } from './schemas/match.schema';
+import { Dialog, DialogDocument } from 'src/dialog/schemas/dialog.schema';
 
 const PARTNER_FIELDS = { name: 1, age: 1, photos: 1, about: 1 };
 

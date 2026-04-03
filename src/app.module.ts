@@ -9,13 +9,12 @@ import { DialogModule } from './dialog/dialog.module';
 import { UploadModule } from './upload/upload.module';
 import { SeedModule } from './seed/seed.module';
 import { ReferenceModule } from './reference/reference.module';
-import {
-  DialogMongoModule,
-  LikeMongoModule,
-  MatchMongoModule,
-  MessageMongoModule,
-} from 'src/schemas';
+
 import { RedisModule } from '@liaoliaots/nestjs-redis';
+import { LikeMongoModule } from './match/schemas/like.schema';
+import { MatchMongoModule } from './match/schemas/match.schema';
+import { DialogMongoModule } from './dialog/schemas/dialog.schema';
+import { MessageMongoModule } from './dialog/schemas/message.schema';
 
 @Module({
   imports: [

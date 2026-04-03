@@ -38,10 +38,9 @@ async function bootstrap() {
   });
 
   app.useGlobalPipes(validationPipe);
-  app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new MulterExceptionFilter(), new HttpExceptionFilter());
-
   const reflector = app.get(Reflector);
+  app.useGlobalInterceptors(new ResponseInterceptor(reflector));
   app.useGlobalGuards(new JwtAuthGuard(reflector));
 
   app.enableCors({

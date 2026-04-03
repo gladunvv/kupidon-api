@@ -5,9 +5,9 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { User, UserDocument } from '../schemas/user.schema';
-import { ResponseHelper, ERROR_CODES } from '../core/utils/response.helper';
-import { ApiResponse } from '../core/types/api-response.interface';
+import { User, UserDocument } from '../users/schemas/user.schema';
+import { ERROR_CODES } from 'src/core/http/error-codes';
+
 import { unlink } from 'fs/promises';
 import { join } from 'path';
 
@@ -18,13 +18,13 @@ export class UploadService {
   async uploadPhotos(
     userId: string,
     photos: Express.Multer.File[],
-  ): Promise<ApiResponse<{ photos: string[] }>> {
+  ): Promise<{ photos: string[] }> {
     const user = await this.userModel.findById(userId);
     if (!user) {
-      throw new NotFoundException(
-        ResponseHelper.error('User not found', ERROR_CODES.USER_NOT_FOUND)
-          .message,
-      );
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     // Проверяем, не превысит ли загрузка лимит в 5 фотографий
@@ -39,12 +39,10 @@ export class UploadService {
         }
       }
 
-      throw new BadRequestException(
-        ResponseHelper.error(
-          `Maximum 5 photos allowed. You have ${user.photos.length} photos, trying to add ${photos.length}`,
-          'MAX_PHOTOS_EXCEEDED',
-        ).message,
-      );
+      throw new BadRequestException({
+        message: `Maximum 5 photos allowed. You have ${user.photos.length} photos, trying to add ${photos.length}`,
+        code: ERROR_CODES.MAX_PHOTOS_EXCEEDED,
+      });
     }
 
     // Создаем пути к новым фотографиям
@@ -57,26 +55,26 @@ export class UploadService {
       $push: { photos: { $each: newPhotoPaths } },
     });
 
-    return ResponseHelper.success(
-      { photos: newPhotoPaths },
-      `${photos.length} photo(s) uploaded successfully`,
-    );
+    return {
+      photos: newPhotoPaths,
+    };
   }
 
-  async deletePhoto(userId: string, photoPath: string): Promise<ApiResponse> {
+  async deletePhoto(userId: string, photoPath: string): Promise<void> {
     const user = await this.userModel.findById(userId);
     if (!user) {
-      throw new NotFoundException(
-        ResponseHelper.error('User not found', ERROR_CODES.USER_NOT_FOUND)
-          .message,
-      );
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     // Проверяем, принадлежит ли фото пользователю
     if (!user.photos.includes(photoPath)) {
-      throw new BadRequestException(
-        ResponseHelper.error('Photo not found', ERROR_CODES.NOT_FOUND).message,
-      );
+      throw new BadRequestException({
+        message: 'Photo not found',
+        code: ERROR_CODES.NOT_FOUND,
+      });
     }
 
     // Удаляем файл с диска
@@ -91,19 +89,19 @@ export class UploadService {
       $pull: { photos: photoPath },
     });
 
-    return ResponseHelper.message('Photo deleted successfully');
+    return null;
   }
 
   async reorderPhotos(
     userId: string,
     photoOrder: string[],
-  ): Promise<ApiResponse<{ photos: string[] }>> {
+  ): Promise<{ photos: string[] }> {
     const user = await this.userModel.findById(userId);
     if (!user) {
-      throw new NotFoundException(
-        ResponseHelper.error('User not found', ERROR_CODES.USER_NOT_FOUND)
-          .message,
-      );
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     // Проверяем, что все фото из нового порядка принадлежат пользователю
@@ -111,23 +109,18 @@ export class UploadService {
     const invalidPhotos = photoOrder.filter((photo) => !userPhotos.has(photo));
 
     if (invalidPhotos.length > 0) {
-      throw new BadRequestException(
-        ResponseHelper.error(
-          'Some photos do not belong to user',
-          'INVALID_PHOTOS',
-          { invalidPhotos },
-        ).message,
-      );
+      throw new BadRequestException({
+        message: 'Some photos do not belong to user',
+        code: ERROR_CODES.INVALID_PHOTOS,
+      });
     }
 
     // Проверяем, что количество фото совпадает
     if (photoOrder.length !== user.photos.length) {
-      throw new BadRequestException(
-        ResponseHelper.error('Photo count mismatch', 'PHOTO_COUNT_MISMATCH', {
-          expected: user.photos.length,
-          received: photoOrder.length,
-        }).message,
-      );
+      throw new BadRequestException({
+        message: 'Photo count mismatch',
+        code: ERROR_CODES.PHOTO_COUNT_MISMATCH,
+      });
     }
 
     // Обновляем порядок фотографий
@@ -135,26 +128,18 @@ export class UploadService {
       photos: photoOrder,
     });
 
-    return ResponseHelper.success(
-      { photos: photoOrder },
-      'Photos reordered successfully',
-    );
+    return { photos: photoOrder };
   }
 
-  async getUserPhotos(
-    userId: string,
-  ): Promise<ApiResponse<{ photos: string[] }>> {
+  async getUserPhotos(userId: string): Promise<{ photos: string[] }> {
     const user = await this.userModel.findById(userId);
     if (!user) {
-      throw new NotFoundException(
-        ResponseHelper.error('User not found', ERROR_CODES.USER_NOT_FOUND)
-          .message,
-      );
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
-    return ResponseHelper.success(
-      { photos: user.photos },
-      'Photos retrieved successfully',
-    );
+    return { photos: user.photos };
   }
 }

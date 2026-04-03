@@ -35,27 +35,38 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message?: string | string[];
           error?: string;
           details?: unknown;
+          code?: string;
         };
-        message =
-          (responseObj.message as string) || responseObj.error || message;
-        details = responseObj.details ?? responseObj;
-
-        switch (status) {
-          case HttpStatus.UNAUTHORIZED:
-            errorCode = ERROR_CODES.UNAUTHORIZED;
-            break;
-          case HttpStatus.FORBIDDEN:
-            errorCode = ERROR_CODES.FORBIDDEN;
-            break;
-          case HttpStatus.NOT_FOUND:
-            errorCode = ERROR_CODES.NOT_FOUND;
-            break;
-          case HttpStatus.BAD_REQUEST:
-            errorCode = ERROR_CODES.BAD_REQUEST;
-            break;
-          default:
-            errorCode = ERROR_CODES.INTERNAL_SERVER_ERROR;
+        if (typeof responseObj.message === 'string') {
+          message = responseObj.message;
+        } else if (Array.isArray(responseObj.message)) {
+          message = responseObj.message.join(', ');
+        } else if (typeof responseObj.error === 'string') {
+          message = responseObj.error;
         }
+
+        if (typeof responseObj.code === 'string') {
+          errorCode = responseObj.code;
+        } else {
+          switch (status) {
+            case HttpStatus.UNAUTHORIZED:
+              errorCode = ERROR_CODES.UNAUTHORIZED;
+              break;
+            case HttpStatus.FORBIDDEN:
+              errorCode = ERROR_CODES.FORBIDDEN;
+              break;
+            case HttpStatus.NOT_FOUND:
+              errorCode = ERROR_CODES.NOT_FOUND;
+              break;
+            case HttpStatus.BAD_REQUEST:
+              errorCode = ERROR_CODES.BAD_REQUEST;
+              break;
+            default:
+              errorCode = ERROR_CODES.INTERNAL_SERVER_ERROR;
+          }
+        }
+
+        details = responseObj.details;
       }
     }
 

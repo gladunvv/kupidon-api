@@ -11,7 +11,7 @@ import {
   LifestyleCategorySchema,
   LifestyleOption,
   LifestyleOptionSchema,
-} from '../schemas';
+} from './schemas';
 import { ReferenceController } from './reference.controller';
 import { ReferenceService } from './reference.service';
 

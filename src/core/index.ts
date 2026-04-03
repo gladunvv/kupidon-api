@@ -1,9 +1,6 @@
 // Types
 export * from './types/api-response.interface';
 
-// Utils
-export * from './utils/response.helper';
-
 // Interceptors
 export * from './http/response.interceptor';
 

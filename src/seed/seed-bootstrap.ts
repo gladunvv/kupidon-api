@@ -12,10 +12,13 @@ const logger = new Logger('SeedBootstrap');
 export async function createSeedApplication() {
   try {
     logger.log('🚀 Создание изолированного seed приложения...');
-    
-    const app = await NestFactory.createApplicationContext(SeedStandaloneModule, {
-      logger: ['error', 'warn', 'log'],
-    });
+
+    const app = await NestFactory.createApplicationContext(
+      SeedStandaloneModule,
+      {
+        logger: ['error', 'warn', 'log'],
+      },
+    );
 
     logger.log('✅ Seed приложение создано успешно');
     return app;
@@ -28,13 +31,15 @@ export async function createSeedApplication() {
 /**
  * Запускает seed операции с изолированным контекстом
  */
-export async function runSeedWithIsolation(options: {
-  clearExisting?: boolean;
-  models?: string[];
-  verbose?: boolean;
-} = {}) {
+export async function runSeedWithIsolation(
+  options: {
+    clearExisting?: boolean;
+    models?: string[];
+    verbose?: boolean;
+  } = {},
+) {
   let app;
-  
+
   try {
     app = await createSeedApplication();
     const seedService = app.get(SeedService);

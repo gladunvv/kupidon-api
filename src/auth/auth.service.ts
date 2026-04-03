@@ -3,11 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { Response } from 'express';
-import { User, UserDocument } from '../schemas/user.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OtpService } from '../otp/otp.service';
-import { ResponseHelper, ERROR_CODES } from '../core/utils/response.helper';
-import { ApiResponse } from '../core/types/api-response.interface';
+import { ERROR_CODES } from 'src/core/http/error-codes';
 
 @Injectable()
 export class AuthService {
@@ -17,10 +16,9 @@ export class AuthService {
     private otpService: OtpService,
   ) {}
 
-  async sendOtp(phone: string): Promise<{ message: string }> {
+  async sendOtp(phone: string): Promise<void> {
     const otp = await this.otpService.generateOtp(phone);
     await this.otpService.sendOtp(phone, otp);
-    return { message: 'OTP sent successfully' };
   }
 
   async verifyOtp(
@@ -29,10 +27,10 @@ export class AuthService {
   ): Promise<{ access_token: string; user: User }> {
     const isValid = await this.otpService.validateOtp(phone, otp);
     if (!isValid) {
-      throw new UnauthorizedException(
-        ResponseHelper.error('Invalid OTP code', ERROR_CODES.INVALID_OTP)
-          .message,
-      );
+      throw new UnauthorizedException({
+        message: 'Invalid OTP code',
+        code: ERROR_CODES.INVALID_OTP,
+      });
     }
 
     let user = await this.userModel.findOne({ phone });
@@ -54,15 +52,13 @@ export class AuthService {
   async refreshToken(
     refresh_token: string,
     res: Response,
-  ): Promise<ApiResponse<{ access_token: string }>> {
+  ): Promise<{ access_token: string; user: User }> {
     if (!refresh_token) {
       res.clearCookie('refresh_token');
-      throw new UnauthorizedException(
-        ResponseHelper.error(
-          'Refresh token not found',
-          ERROR_CODES.INVALID_TOKEN,
-        ).message,
-      );
+      throw new UnauthorizedException({
+        message: 'Refresh token not found',
+        code: ERROR_CODES.INVALID_TOKEN,
+      });
     }
 
     try {
@@ -71,32 +67,27 @@ export class AuthService {
 
       if (!user) {
         res.clearCookie('refresh_token');
-        throw new UnauthorizedException(
-          ResponseHelper.error('User not found', ERROR_CODES.INVALID_TOKEN)
-            .message,
-        );
+        throw new UnauthorizedException({
+          message: 'User not found',
+          code: ERROR_CODES.INVALID_TOKEN,
+        });
       }
 
       const tokens = this.generateTokens(payload.sub, payload.phone);
 
       this.setRefreshTokenCookie(res, tokens.refresh_token);
 
-      return ResponseHelper.success(
-        {
-          access_token: tokens.access_token,
-          user: user.toObject(),
-        },
-        'Token refreshed successfully',
-      );
+      return {
+        access_token: tokens.access_token,
+        user: user.toObject(),
+      };
     } catch (error) {
       res.clearCookie('refresh_token');
-      throw new UnauthorizedException(
-        ResponseHelper.error(
-          'Invalid refresh token',
-          ERROR_CODES.INVALID_TOKEN,
-          error.message,
-        ).message,
-      );
+      throw new UnauthorizedException({
+        message: 'Invalid refresh token',
+        code: ERROR_CODES.INVALID_TOKEN,
+        details: error.message,
+      });
     }
   }
 
@@ -110,9 +101,8 @@ export class AuthService {
     return { access_token, refresh_token };
   }
 
-  async logout(res: Response): Promise<ApiResponse> {
+  async logout(res: Response): Promise<void> {
     res.clearCookie('refresh_token');
-    return ResponseHelper.message('Logged out successfully');
   }
 
   private setRefreshTokenCookie(res: Response, refreshToken: string): void {

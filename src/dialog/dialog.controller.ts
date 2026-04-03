@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Param,
-  UseGuards,
-  Req,
-  Post,
-  Body,
-} from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, Post, Body } from '@nestjs/common';
 import { DialogService } from './dialog.service';
 import { JwtAuthGuard } from '../auth/guards/auth-guard';
 import {
@@ -19,6 +11,7 @@ import { CreateDialogDto } from './dto/dialog-create.dto';
 import { SendMessageDto } from './dto/dialog-send-message.dto';
 import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
 import { ResponseMessage } from 'src/core/decorators/response-message.decorator';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 
 @ApiTags('Dialogs')
 @ApiBearerAuth()
@@ -30,10 +23,8 @@ export class DialogController {
   @ApiOperation({ summary: 'Get current user dialogs' })
   @ResponseMessage('Dialogs retrieved successfully')
   @Get()
-  async getUserDialogs(@Req() req) {
-    const userId = req.user._id;
-
-    return await this.dialogService.getUserDialogs(userId);
+  async getUserDialogs(@CurrentUser('_id') userId: string) {
+    return this.dialogService.getUserDialogs(userId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -49,11 +40,11 @@ export class DialogController {
   @ApiParam({ name: 'id', example: '66123456789abcdef0123456' })
   @ResponseMessage('Dialog retrieved successfully')
   @Get(':id')
-  async getDialog(@Param('id', ParseObjectIdPipe) id: string, @Req() req) {
-    const userId = req.user._id;
-    const dialog = await this.dialogService.getDialogWithPartner(id, userId);
-
-    return dialog;
+  async getDialog(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser('_id') userId: string,
+  ) {
+    return this.dialogService.getDialogWithPartner(id, userId);
   }
 
   @UseGuards(JwtAuthGuard)
@@ -61,8 +52,10 @@ export class DialogController {
   @ApiParam({ name: 'id', example: '66123456789abcdef0123456' })
   @ResponseMessage('Messages retrieved successfully')
   @Get(':id/messages')
-  async getMessages(@Param('id', ParseObjectIdPipe) id: string, @Req() req) {
-    const userId = req.user._id;
+  async getMessages(
+    @Param('id', ParseObjectIdPipe) id: string,
+    @CurrentUser('_id') userId: string,
+  ) {
     const dialog = await this.dialogService.getDialogWithPartner(id, userId);
 
     return {
@@ -80,9 +73,8 @@ export class DialogController {
   async sendMessage(
     @Param('id', ParseObjectIdPipe) id: string,
     @Body() dto: SendMessageDto,
-    @Req() req,
+    @CurrentUser('_id') userId: string,
   ) {
-    const userId = req.user._id;
-    return await this.dialogService.sendMessage(id, userId, dto.text);
+    return this.dialogService.sendMessage(id, userId, dto.text);
   }
 }

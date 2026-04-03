@@ -3,7 +3,6 @@ import {
   Controller,
   Get,
   Put,
-  Req,
   Query,
   Patch,
   Param,
@@ -13,8 +12,7 @@ import {
   UpdateProfileDto,
   UpdateSearchPreferencesDto,
 } from './dto/update-profile.dto';
-import { Request } from 'express';
-import { ResponseHelper } from '../core/utils/response.helper';
+
 import {
   ApiBearerAuth,
   ApiOperation,
@@ -24,6 +22,8 @@ import {
 import { ParseObjectIdPipe } from 'src/core/pipes/parse-object-id.pipe';
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
 import { GetNearbyUsersQueryDto } from './dto/get-nearby-users-query.dto';
+import { ResponseMessage } from 'src/core/decorators/response-message.decorator';
+import { CurrentUser } from 'src/core/decorators/current-user.decorator';
 
 @ApiTags('Users')
 @ApiBearerAuth()
@@ -32,77 +32,63 @@ export class UsersController {
   constructor(private readonly usersService: UsersService) {}
 
   @ApiOperation({ summary: 'Get current user profile' })
+  @ResponseMessage('Profile retrieved successfully')
   @Get()
-  async getProfile(@Req() req: Request) {
-    const userId = req.user._id;
-    const user = await this.usersService.getFullProfile(userId);
-    return ResponseHelper.success(user, 'Profile retrieved successfully');
+  async getProfile(@CurrentUser('_id') userId: string) {
+    return this.usersService.getFullProfile(userId);
   }
 
   @ApiOperation({ summary: 'Get profile completeness details' })
+  @ResponseMessage('Complete profile retrieved successfully')
   @Get('profile/complete')
-  async getCompleteProfile(@Req() req: Request) {
-    const userId = req.user._id;
-    const profile = await this.usersService.getCompleteProfile(userId);
-    return ResponseHelper.success(
-      profile,
-      'Complete profile retrieved successfully',
-    );
+  async getCompleteProfile(@CurrentUser('_id') userId: string) {
+    return this.usersService.getCompleteProfile(userId);
   }
 
   @ApiOperation({ summary: 'Get candidates for matching' })
+  @ResponseMessage('Users list retrieved successfully')
   @Get('list')
-  async getUsersList(@Req() req: Request, @Query() query: GetUsersQueryDto) {
-    const currentUserId = req.user._id;
-
-    const result = await this.usersService.findUsersForMatching(
+  async getUsersList(
+    @CurrentUser('_id') currentUserId: string,
+    @Query() query: GetUsersQueryDto,
+  ) {
+    return this.usersService.findUsersForMatching(
       currentUserId,
       query.page,
       query.limit,
     );
-
-    return ResponseHelper.success(result, 'Users list retrieved successfully');
   }
 
   @ApiOperation({ summary: 'Update current user profile' })
+  @ResponseMessage('Profile updated successfully')
   @Put()
   async updateProfile(
-    @Req() req: Request,
+    @CurrentUser('_id') userId: string,
     @Body() updateProfileDto: UpdateProfileDto,
   ) {
-    const userId = req.user._id;
-    const updatedUser = await this.usersService.updateProfile(
-      userId,
-      updateProfileDto,
-    );
-    return ResponseHelper.success(updatedUser, 'Profile updated successfully');
+    return this.usersService.updateProfile(userId, updateProfileDto);
   }
 
   @ApiOperation({ summary: 'Update search preferences' })
+  @ResponseMessage('Search preferences updated successfully')
   @Patch('search-preferences')
   async updateSearchPreferences(
-    @Req() req: Request,
+    @CurrentUser('_id') userId: string,
     @Body() updateSearchPreferencesDto: UpdateSearchPreferencesDto,
   ) {
-    const userId = req.user._id;
-    const updatedUser = await this.usersService.updateSearchPreferences(
+    return this.usersService.updateSearchPreferences(
       userId,
       updateSearchPreferencesDto,
-    );
-    return ResponseHelper.success(
-      updatedUser,
-      'Search preferences updated successfully',
     );
   }
 
   @ApiOperation({ summary: 'Find nearby users' })
+  @ResponseMessage('Nearby users retrieved successfully')
   @Get('nearby')
   async getNearbyUsers(
-    @Req() req: Request,
+    @CurrentUser('_id') userId: string,
     @Query() query: GetNearbyUsersQueryDto,
   ) {
-    const userId = req.user._id;
-
     const coordinates =
       query.lat && query.lng
         ? {
@@ -111,17 +97,12 @@ export class UsersController {
           }
         : undefined;
 
-    const result = await this.usersService.findNearbyUsers(
+    return await this.usersService.findNearbyUsers(
       userId,
       coordinates,
       query.maxDistance,
       query.page,
       query.limit,
-    );
-
-    return ResponseHelper.success(
-      result,
-      'Nearby users retrieved successfully',
     );
   }
 
@@ -130,19 +111,12 @@ export class UsersController {
     name: 'targetUserId',
     example: '66123456789abcdef0123456',
   })
+  @ResponseMessage('Compatibility calculated successfully')
   @Get('compatibility/:targetUserId')
   async getCompatibility(
-    @Req() req: Request,
+    @CurrentUser('_id') userId: string,
     @Param('targetUserId', ParseObjectIdPipe) targetUserId: string,
   ) {
-    const userId = req.user._id;
-    const compatibility = await this.usersService.calculateCompatibility(
-      userId,
-      targetUserId,
-    );
-    return ResponseHelper.success(
-      compatibility,
-      'Compatibility calculated successfully',
-    );
+    return this.usersService.calculateCompatibility(userId, targetUserId);
   }
 }

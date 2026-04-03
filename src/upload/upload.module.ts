@@ -4,7 +4,7 @@ import { diskStorage } from 'multer';
 import { extname } from 'path';
 import { UploadService } from './upload.service';
 import { UploadController } from './upload.controller';
-import { UserMongoModule } from '../schemas';
+import { UserMongoModule } from 'src/users/schemas/user.schema';
 
 @Module({
   imports: [

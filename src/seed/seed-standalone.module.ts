@@ -1,19 +1,22 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+
+import { SeedService } from './seed.service';
+import { SeedDataService } from './seed-data.service';
 import {
   LifestyleCategory,
   LifestyleCategorySchema,
+} from 'src/reference/schemas/lifestyle-category.schema';
+import {
   LifestyleOption,
   LifestyleOptionSchema,
-  Goal,
-  GoalSchema,
+} from 'src/reference/schemas/lifestyle-option.schema';
+import { Goal, GoalSchema } from 'src/reference/schemas/goal.schema';
+import {
   Interest,
   InterestSchema,
-  City,
-  CitySchema,
-} from '../schemas';
-import { SeedService } from './seed.service';
-import { SeedDataService } from './seed-data.service';
+} from 'src/reference/schemas/interest.schema';
+import { City, CitySchema } from 'src/reference/schemas/city.schema';
 
 /**
  * Изолированный модуль для seed операций
