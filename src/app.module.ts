@@ -4,34 +4,43 @@ import { AppService } from './app.service';
 import { AuthModule } from './auth/auth.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { UsersModule } from './users/users.module';
-import { MatchService } from './match/match.service';
 import { MatchModule } from './match/match.module';
-import { DialogService } from './dialog/dialog.service';
 import { DialogModule } from './dialog/dialog.module';
-import {
-  DialogMongoModule,
-  LikeMongoModule,
-  MatchMongoModule,
-  MessageMongoModule,
-} from 'schemas';
+import { UploadModule } from './upload/upload.module';
+import { SeedModule } from './seed/seed.module';
+import { ReferenceModule } from './reference/reference.module';
+
+import { RedisModule } from '@liaoliaots/nestjs-redis';
+import { LikeMongoModule } from './match/schemas/like.schema';
+import { MatchMongoModule } from './match/schemas/match.schema';
+import { DialogMongoModule } from './dialog/schemas/dialog.schema';
+import { MessageMongoModule } from './dialog/schemas/message.schema';
 
 @Module({
   imports: [
     MongooseModule.forRootAsync({
       useFactory: async () => ({
-        uri: 'mongodb://localhost/datingapp',
+        uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/datingapp',
       }),
+    }),
+    RedisModule.forRoot({
+      config: {
+        url: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
+      },
     }),
     AuthModule,
     UsersModule,
     DialogModule,
     MatchModule,
+    UploadModule,
+    SeedModule,
+    ReferenceModule,
     LikeMongoModule,
     MatchMongoModule,
     DialogMongoModule,
     MessageMongoModule,
   ],
   controllers: [AppController],
-  providers: [AppService, MatchService, DialogService],
+  providers: [AppService],
 })
 export class AppModule {}

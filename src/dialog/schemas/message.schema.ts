@@ -4,6 +4,12 @@ import { Document, Types } from 'mongoose';
 
 export type MessageDocument = Message & Document;
 
+export enum StatusMessage {
+  SEND = 1,
+  REED = 2,
+  ERROR = 3,
+}
+
 @Schema({
   collection: 'messages',
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
@@ -14,6 +20,14 @@ export class Message {
 
   @Prop({ type: String, ref: 'User', required: true })
   text: string;
+
+  @Prop({
+    type: Number,
+    enum: StatusMessage,
+    required: true,
+    default: StatusMessage.SEND,
+  })
+  status: StatusMessage;
 }
 
 const MessageSchema = SchemaFactory.createForClass(Message);

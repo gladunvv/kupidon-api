@@ -1,0 +1,672 @@
+import { Injectable } from '@nestjs/common';
+import { Types } from 'mongoose';
+
+@Injectable()
+export class SeedDataService {
+  /**
+   * Возвращает данные для категорий образа жизни
+   */
+  getLifestyleCategories() {
+    return [
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439011'),
+        name: 'Дети',
+        description: 'Отношение к детям и планы на будущее',
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439012'),
+        name: 'Курение',
+        description: 'Отношение к курению',
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439013'),
+        name: 'Алкоголь',
+        description: 'Отношение к алкоголю',
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439014'),
+        name: 'Питомцы',
+        description: 'Отношение к домашним животным',
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439015'),
+        name: 'Спорт',
+        description: 'Активность и занятия спортом',
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439016'),
+        name: 'Питание',
+        description: 'Предпочтения в питании',
+      },
+    ];
+  }
+
+  /**
+   * Возвращает данные для опций образа жизни
+   */
+  getLifestyleOptions() {
+    return [
+      // Дети
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439021'),
+        label: 'Нет детей',
+        value: 'no_children',
+        category: new Types.ObjectId('507f1f77bcf86cd799439011'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439022'),
+        label: 'Есть дети',
+        value: 'have_children',
+        category: new Types.ObjectId('507f1f77bcf86cd799439011'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439023'),
+        label: 'Хочу детей',
+        value: 'want_children',
+        category: new Types.ObjectId('507f1f77bcf86cd799439011'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439024'),
+        label: 'Не хочу детей',
+        value: 'dont_want_children',
+        category: new Types.ObjectId('507f1f77bcf86cd799439011'),
+      },
+
+      // Курение
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439031'),
+        label: 'Не курю',
+        value: 'never_smoke',
+        category: new Types.ObjectId('507f1f77bcf86cd799439012'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439032'),
+        label: 'Иногда курю',
+        value: 'sometimes_smoke',
+        category: new Types.ObjectId('507f1f77bcf86cd799439012'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439033'),
+        label: 'Курю регулярно',
+        value: 'regularly_smoke',
+        category: new Types.ObjectId('507f1f77bcf86cd799439012'),
+      },
+
+      // Алкоголь
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439041'),
+        label: 'Не пью',
+        value: 'never_drink',
+        category: new Types.ObjectId('507f1f77bcf86cd799439013'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439042'),
+        label: 'Иногда выпиваю',
+        value: 'sometimes_drink',
+        category: new Types.ObjectId('507f1f77bcf86cd799439013'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439043'),
+        label: 'Пью регулярно',
+        value: 'regularly_drink',
+        category: new Types.ObjectId('507f1f77bcf86cd799439013'),
+      },
+
+      // Питомцы
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439051'),
+        label: 'Нет питомцев',
+        value: 'no_pets',
+        category: new Types.ObjectId('507f1f77bcf86cd799439014'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439052'),
+        label: 'Есть собака',
+        value: 'have_dog',
+        category: new Types.ObjectId('507f1f77bcf86cd799439014'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439053'),
+        label: 'Есть кошка',
+        value: 'have_cat',
+        category: new Types.ObjectId('507f1f77bcf86cd799439014'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439054'),
+        label: 'Другие питомцы',
+        value: 'have_other_pets',
+        category: new Types.ObjectId('507f1f77bcf86cd799439014'),
+      },
+
+      // Спорт
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439061'),
+        label: 'Не занимаюсь спортом',
+        value: 'no_sport',
+        category: new Types.ObjectId('507f1f77bcf86cd799439015'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439062'),
+        label: 'Иногда занимаюсь',
+        value: 'sometimes_sport',
+        category: new Types.ObjectId('507f1f77bcf86cd799439015'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439063'),
+        label: 'Регулярно занимаюсь',
+        value: 'regularly_sport',
+        category: new Types.ObjectId('507f1f77bcf86cd799439015'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439064'),
+        label: 'Профессиональный спорт',
+        value: 'professional_sport',
+        category: new Types.ObjectId('507f1f77bcf86cd799439015'),
+      },
+
+      // Питание
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439071'),
+        label: 'Всеядный',
+        value: 'omnivore',
+        category: new Types.ObjectId('507f1f77bcf86cd799439016'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439072'),
+        label: 'Вегетарианец',
+        value: 'vegetarian',
+        category: new Types.ObjectId('507f1f77bcf86cd799439016'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439073'),
+        label: 'Веган',
+        value: 'vegan',
+        category: new Types.ObjectId('507f1f77bcf86cd799439016'),
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439074'),
+        label: 'Особая диета',
+        value: 'special_diet',
+        category: new Types.ObjectId('507f1f77bcf86cd799439016'),
+      },
+    ];
+  }
+
+  /**
+   * Возвращает данные для целей знакомств
+   */
+  getGoals() {
+    return [
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439081'),
+        name: 'Серьезные отношения',
+        weight: 10,
+        icon: '💕',
+        tags: ['relationship', 'serious', 'love'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439082'),
+        name: 'Дружба',
+        weight: 5,
+        icon: '🤝',
+        tags: ['friendship', 'platonic', 'social'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439083'),
+        name: 'Общение',
+        weight: 3,
+        icon: '💬',
+        tags: ['chat', 'communication', 'social'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439084'),
+        name: 'Флирт',
+        weight: 4,
+        icon: '😉',
+        tags: ['flirt', 'casual', 'fun'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439085'),
+        name: 'Свидания',
+        weight: 7,
+        icon: '🌹',
+        tags: ['dating', 'romance', 'meetings'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439086'),
+        name: 'Путешествия вместе',
+        weight: 6,
+        icon: '✈️',
+        tags: ['travel', 'adventure', 'together'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439087'),
+        name: 'Совместные хобби',
+        weight: 5,
+        icon: '🎨',
+        tags: ['hobby', 'interests', 'activities'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439088'),
+        name: 'Бизнес-партнерство',
+        weight: 4,
+        icon: '💼',
+        tags: ['business', 'partnership', 'work'],
+      },
+    ];
+  }
+
+  /**
+   * Возвращает данные для городов
+   */
+  getCities() {
+    return [
+      // Россия
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f01'),
+        name: 'Москва',
+        fullName: 'Москва, Россия',
+        countryCode: 'RU',
+        region: 'Московская область',
+        coordinates: [37.6176, 55.7558], // [longitude, latitude]
+        population: 12500000,
+        popularity: 100,
+        timezone: 'Europe/Moscow',
+        aliases: ['Moscow', 'Москва'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f02'),
+        name: 'Санкт-Петербург',
+        fullName: 'Санкт-Петербург, Россия',
+        countryCode: 'RU',
+        region: 'Ленинградская область',
+        coordinates: [30.3351, 59.9311],
+        population: 5400000,
+        popularity: 85,
+        timezone: 'Europe/Moscow',
+        aliases: ['Saint Petersburg', 'СПб', 'Питер'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f03'),
+        name: 'Новосибирск',
+        fullName: 'Новосибирск, Новосибирская область, Россия',
+        countryCode: 'RU',
+        region: 'Новосибирская область',
+        coordinates: [82.9346, 55.0084],
+        population: 1625000,
+        popularity: 60,
+        timezone: 'Asia/Novosibirsk',
+        aliases: ['Novosibirsk'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f04'),
+        name: 'Екатеринбург',
+        fullName: 'Екатеринбург, Свердловская область, Россия',
+        countryCode: 'RU',
+        region: 'Свердловская область',
+        coordinates: [60.6122, 56.8431],
+        population: 1500000,
+        popularity: 55,
+        timezone: 'Asia/Yekaterinburg',
+        aliases: ['Yekaterinburg'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f05'),
+        name: 'Казань',
+        fullName: 'Казань, Республика Татарстан, Россия',
+        countryCode: 'RU',
+        region: 'Республика Татарстан',
+        coordinates: [49.1221, 55.7887],
+        population: 1260000,
+        popularity: 50,
+        timezone: 'Europe/Moscow',
+        aliases: ['Kazan'],
+      },
+
+      // США
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f11'),
+        name: 'New York',
+        fullName: 'New York, NY, USA',
+        countryCode: 'US',
+        region: 'New York',
+        coordinates: [-74.006, 40.7128],
+        population: 8400000,
+        popularity: 95,
+        timezone: 'America/New_York',
+        aliases: ['NYC', 'Нью-Йорк'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f12'),
+        name: 'Los Angeles',
+        fullName: 'Los Angeles, CA, USA',
+        countryCode: 'US',
+        region: 'California',
+        coordinates: [-118.2437, 34.0522],
+        population: 4000000,
+        popularity: 90,
+        timezone: 'America/Los_Angeles',
+        aliases: ['LA', 'Лос-Анджелес'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f13'),
+        name: 'Chicago',
+        fullName: 'Chicago, IL, USA',
+        countryCode: 'US',
+        region: 'Illinois',
+        coordinates: [-87.6298, 41.8781],
+        population: 2700000,
+        popularity: 75,
+        timezone: 'America/Chicago',
+        aliases: ['Чикаго'],
+      },
+
+      // Европа
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f21'),
+        name: 'Berlin',
+        fullName: 'Berlin, Germany',
+        countryCode: 'DE',
+        region: 'Berlin',
+        coordinates: [13.405, 52.52],
+        population: 3700000,
+        popularity: 80,
+        timezone: 'Europe/Berlin',
+        aliases: ['Берлин'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f22'),
+        name: 'London',
+        fullName: 'London, England, UK',
+        countryCode: 'GB',
+        region: 'England',
+        coordinates: [-0.1278, 51.5074],
+        population: 9000000,
+        popularity: 85,
+        timezone: 'Europe/London',
+        aliases: ['Лондон'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f23'),
+        name: 'Paris',
+        fullName: 'Paris, France',
+        countryCode: 'FR',
+        region: 'Île-de-France',
+        coordinates: [2.3522, 48.8566],
+        population: 2200000,
+        popularity: 82,
+        timezone: 'Europe/Paris',
+        aliases: ['Париж'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f24'),
+        name: 'Amsterdam',
+        fullName: 'Amsterdam, Netherlands',
+        countryCode: 'NL',
+        region: 'North Holland',
+        coordinates: [4.9041, 52.3676],
+        population: 900000,
+        popularity: 70,
+        timezone: 'Europe/Amsterdam',
+        aliases: ['Амстердам'],
+      },
+
+      // Азия
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f31'),
+        name: 'Tokyo',
+        fullName: 'Tokyo, Japan',
+        countryCode: 'JP',
+        region: 'Kantō',
+        coordinates: [139.6917, 35.6895],
+        population: 14000000,
+        popularity: 88,
+        timezone: 'Asia/Tokyo',
+        aliases: ['Токио'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f32'),
+        name: 'Seoul',
+        fullName: 'Seoul, South Korea',
+        countryCode: 'KR',
+        region: 'Seoul Capital Area',
+        coordinates: [126.978, 37.5665],
+        population: 9700000,
+        popularity: 75,
+        timezone: 'Asia/Seoul',
+        aliases: ['Сеул'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439f33'),
+        name: 'Dubai',
+        fullName: 'Dubai, UAE',
+        countryCode: 'AE',
+        region: 'Dubai',
+        coordinates: [55.2708, 25.2048],
+        population: 3400000,
+        popularity: 65,
+        timezone: 'Asia/Dubai',
+        aliases: ['Дубай'],
+      },
+    ];
+  }
+
+  /**
+   * Возвращает данные для интересов
+   */
+  getInterests() {
+    return [
+      // Спорт и активность
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439091'),
+        label: 'Фитнес',
+        value: 'fitness',
+        weight: 8,
+        icon: '💪',
+        tags: ['sport', 'health', 'gym'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439092'),
+        label: 'Йога',
+        value: 'yoga',
+        weight: 7,
+        icon: '🧘‍♀️',
+        tags: ['sport', 'meditation', 'flexibility'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439093'),
+        label: 'Бег',
+        value: 'running',
+        weight: 6,
+        icon: '🏃‍♂️',
+        tags: ['sport', 'cardio', 'outdoor'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439094'),
+        label: 'Плавание',
+        value: 'swimming',
+        weight: 6,
+        icon: '🏊‍♀️',
+        tags: ['sport', 'water', 'cardio'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd799439095'),
+        label: 'Велосипед',
+        value: 'cycling',
+        weight: 5,
+        icon: '🚴‍♂️',
+        tags: ['sport', 'outdoor', 'transport'],
+      },
+
+      // Творчество
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390a1'),
+        label: 'Рисование',
+        value: 'drawing',
+        weight: 5,
+        icon: '🎨',
+        tags: ['art', 'creativity', 'visual'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390a2'),
+        label: 'Музыка',
+        value: 'music',
+        weight: 9,
+        icon: '🎵',
+        tags: ['art', 'sound', 'entertainment'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390a3'),
+        label: 'Фотография',
+        value: 'photography',
+        weight: 7,
+        icon: '📸',
+        tags: ['art', 'visual', 'memories'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390a4'),
+        label: 'Танцы',
+        value: 'dancing',
+        weight: 6,
+        icon: '💃',
+        tags: ['art', 'movement', 'social'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390a5'),
+        label: 'Кулинария',
+        value: 'cooking',
+        weight: 8,
+        icon: '👨‍🍳',
+        tags: ['food', 'creativity', 'home'],
+      },
+
+      // Развлечения
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390b1'),
+        label: 'Кино',
+        value: 'movies',
+        weight: 9,
+        icon: '🎬',
+        tags: ['entertainment', 'visual', 'stories'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390b2'),
+        label: 'Книги',
+        value: 'books',
+        weight: 7,
+        icon: '📚',
+        tags: ['education', 'stories', 'knowledge'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390b3'),
+        label: 'Игры',
+        value: 'games',
+        weight: 6,
+        icon: '🎮',
+        tags: ['entertainment', 'digital', 'fun'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390b4'),
+        label: 'Театр',
+        value: 'theater',
+        weight: 4,
+        icon: '🎭',
+        tags: ['art', 'culture', 'performance'],
+      },
+
+      // Путешествия и природа
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390c1'),
+        label: 'Путешествия',
+        value: 'travel',
+        weight: 9,
+        icon: '✈️',
+        tags: ['adventure', 'culture', 'exploration'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390c2'),
+        label: 'Природа',
+        value: 'nature',
+        weight: 7,
+        icon: '🌲',
+        tags: ['outdoor', 'environment', 'peace'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390c3'),
+        label: 'Походы',
+        value: 'hiking',
+        weight: 6,
+        icon: '🥾',
+        tags: ['outdoor', 'adventure', 'nature'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390c4'),
+        label: 'Пляж',
+        value: 'beach',
+        weight: 7,
+        icon: '🏖️',
+        tags: ['vacation', 'sun', 'relaxation'],
+      },
+
+      // Образование и развитие
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390d1'),
+        label: 'Изучение языков',
+        value: 'languages',
+        weight: 6,
+        icon: '🗣️',
+        tags: ['education', 'communication', 'culture'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390d2'),
+        label: 'Наука',
+        value: 'science',
+        weight: 5,
+        icon: '🔬',
+        tags: ['education', 'knowledge', 'research'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390d3'),
+        label: 'Технологии',
+        value: 'technology',
+        weight: 7,
+        icon: '💻',
+        tags: ['digital', 'innovation', 'future'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390d4'),
+        label: 'Психология',
+        value: 'psychology',
+        weight: 5,
+        icon: '🧠',
+        tags: ['mind', 'behavior', 'understanding'],
+      },
+
+      // Социальная активность
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390e1'),
+        label: 'Волонтерство',
+        value: 'volunteering',
+        weight: 6,
+        icon: '🤲',
+        tags: ['social', 'help', 'community'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390e2'),
+        label: 'Вечеринки',
+        value: 'parties',
+        weight: 6,
+        icon: '🎉',
+        tags: ['social', 'fun', 'celebration'],
+      },
+      {
+        _id: new Types.ObjectId('507f1f77bcf86cd7994390e3'),
+        label: 'Нетворкинг',
+        value: 'networking',
+        weight: 5,
+        icon: '🤝',
+        tags: ['business', 'connections', 'professional'],
+      },
+    ];
+  }
+}

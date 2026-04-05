@@ -15,6 +15,18 @@ export class Dialog {
 
   @Prop({ type: [Types.ObjectId], ref: 'Message' })
   messages: Message[];
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  user1: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'User' })
+  user2: Types.ObjectId;
+
+  @Prop({ type: Types.ObjectId, ref: 'Message' })
+  lastMessage: Types.ObjectId;
+
+  @Prop({ type: Boolean, default: true })
+  isActive: boolean;
 }
 
 const DialogSchema = SchemaFactory.createForClass(Dialog);
