@@ -19,11 +19,12 @@ import {
   ApiParam,
   ApiTags,
 } from '@nestjs/swagger';
-import { ParseObjectIdPipe } from 'src/core/pipes/parse-object-id.pipe';
+
 import { GetUsersQueryDto } from './dto/get-users-query.dto';
 import { GetNearbyUsersQueryDto } from './dto/get-nearby-users-query.dto';
-import { ResponseMessage } from 'src/core/decorators/response-message.decorator';
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
+import { ResponseMessage } from '../core/decorators/response-message.decorator';
+import { CurrentUser } from '../core/decorators/current-user.decorator';
 
 @ApiTags('Users')
 @ApiBearerAuth()

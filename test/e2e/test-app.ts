@@ -214,12 +214,7 @@ export class TestUsersService {
       .slice(0, limit)
       .map((user, index) => ({ ...user, liked: index === 0 }));
 
-    return {
-      users,
-      total: 2,
-      page,
-      totalPages: 1,
-    };
+    return { users, total: 2, page, totalPages: 1 };
   }
 
   updateProfile(userId: string, dto: Record<string, unknown>) {
@@ -775,8 +770,5 @@ export async function createAuthorizedSession(app: INestApplication) {
 
   const accessToken = verify.body.data.access_token as string;
 
-  return {
-    agent,
-    accessToken,
-  };
+  return { agent, accessToken };
 }

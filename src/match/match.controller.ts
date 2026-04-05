@@ -16,9 +16,9 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { LikeUserDto } from './dto/like-user.dto';
-import { ParseObjectIdPipe } from 'src/core/pipes/parse-object-id.pipe';
-import { ResponseMessage } from 'src/core/decorators/response-message.decorator';
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
+import { ResponseMessage } from '../core/decorators/response-message.decorator';
+import { CurrentUser } from '../core/decorators/current-user.decorator';
 
 @ApiTags('Match')
 @ApiBearerAuth()
@@ -42,7 +42,6 @@ export class MatchController {
         match: result.match,
         dialog: result.dialog,
         matched: true,
-        message: 'Match created! You can start chatting now.',
       };
     }
 

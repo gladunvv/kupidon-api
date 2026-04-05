@@ -6,7 +6,7 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { User, UserDocument } from '../users/schemas/user.schema';
-import { ERROR_CODES } from 'src/core/http/error-codes';
+import { ERROR_CODES } from '../core/http/error-codes';
 
 import { unlink } from 'fs/promises';
 import { join } from 'path';

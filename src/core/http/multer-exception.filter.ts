@@ -43,13 +43,8 @@ export class MulterExceptionFilter implements ExceptionFilter {
     const errorResponse: ApiResponse = {
       success: false,
       message,
-      error: {
-        code: errorCode,
-      },
-      meta: {
-        timestamp: new Date().toISOString(),
-        requestId,
-      },
+      error: { code: errorCode },
+      meta: { timestamp: new Date().toISOString(), requestId },
     };
 
     response.status(HttpStatus.BAD_REQUEST).json(errorResponse);

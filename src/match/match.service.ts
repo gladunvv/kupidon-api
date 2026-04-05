@@ -9,7 +9,7 @@ import {
 } from '../core/mongo/partner-aggregation';
 import { Like, LikeDocument } from './schemas/like.schema';
 import { Match, MatchDocument } from './schemas/match.schema';
-import { Dialog, DialogDocument } from 'src/dialog/schemas/dialog.schema';
+import { Dialog, DialogDocument } from '../dialog/schemas/dialog.schema';
 
 const PARTNER_FIELDS = { name: 1, age: 1, photos: 1, about: 1 };
 

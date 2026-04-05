@@ -45,10 +45,7 @@ export class ResponseInterceptor<T> implements NestInterceptor<
           success: true,
           message: defaultMessage,
           data,
-          meta: {
-            timestamp: new Date().toISOString(),
-            requestId: requestId,
-          },
+          meta: { timestamp: new Date().toISOString(), requestId: requestId },
         };
       }),
     );

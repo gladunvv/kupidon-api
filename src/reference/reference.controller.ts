@@ -4,7 +4,7 @@ import { Public } from '../core/decorators/public.decorator';
 import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { GetCitiesQueryDto } from './dto/get-cities-query.dto';
 import { GetInterestsQueryDto } from './dto/get-interests-query.dto';
-import { ParseObjectIdPipe } from 'src/core/pipes/parse-object-id.pipe';
+import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
 
 @ApiTags('Reference')
 @Controller('reference')

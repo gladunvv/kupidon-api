@@ -6,17 +6,14 @@ import { SeedDataService } from './seed-data.service';
 import {
   LifestyleCategory,
   LifestyleCategorySchema,
-} from 'src/reference/schemas/lifestyle-category.schema';
+} from '../reference/schemas/lifestyle-category.schema';
 import {
   LifestyleOption,
   LifestyleOptionSchema,
-} from 'src/reference/schemas/lifestyle-option.schema';
-import { Goal, GoalSchema } from 'src/reference/schemas/goal.schema';
-import {
-  Interest,
-  InterestSchema,
-} from 'src/reference/schemas/interest.schema';
-import { City, CitySchema } from 'src/reference/schemas/city.schema';
+} from '../reference/schemas/lifestyle-option.schema';
+import { Goal, GoalSchema } from '../reference/schemas/goal.schema';
+import { Interest, InterestSchema } from '../reference/schemas/interest.schema';
+import { City, CitySchema } from '../reference/schemas/city.schema';
 
 /**
  * Изолированный модуль для seed операций

@@ -10,7 +10,7 @@ import {
 } from '../core/mongo/partner-aggregation';
 import { Dialog, DialogDocument } from './schemas/dialog.schema';
 import { Message, MessageDocument } from './schemas/message.schema';
-import { Match, MatchDocument } from 'src/match/schemas/match.schema';
+import { Match, MatchDocument } from '../match/schemas/match.schema';
 import { StatusMessage } from './schemas/message.schema';
 
 const PARTNER_FIELDS_FULL = { name: 1, age: 1, photos: 1, about: 1 };

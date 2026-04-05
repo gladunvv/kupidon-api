@@ -12,7 +12,7 @@ import {
   InterestDocument,
   City,
   CityDocument,
-} from 'src/reference/schemas';
+} from '../reference/schemas';
 import { SeedDataService } from './seed-data.service';
 
 export interface SeedOptions {

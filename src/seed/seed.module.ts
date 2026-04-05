@@ -11,7 +11,7 @@ import {
   InterestSchema,
   City,
   CitySchema,
-} from 'src/reference/schemas';
+} from '../reference/schemas';
 import { SeedService } from './seed.service';
 import { SeedDataService } from './seed-data.service';
 import { SeedController } from './seed.controller';
