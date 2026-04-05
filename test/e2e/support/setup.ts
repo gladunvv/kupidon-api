@@ -19,7 +19,5 @@ export const setupE2EApp = () => {
     await app.close();
   });
 
-  return {
-    getApp: () => app,
-  };
+  return { getApp: () => app };
 };

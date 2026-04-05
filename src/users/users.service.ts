@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { User, UserDocument } from 'src/users/schemas/user.schema';
-import { Like, LikeDocument } from 'src/match/schemas/like.schema';
+import { User, UserDocument } from './schemas/user.schema';
+import { Like, LikeDocument } from '../match/schemas/like.schema';
 import { Model, PipelineStage, Types } from 'mongoose';
 import {
   UpdateProfileDto,

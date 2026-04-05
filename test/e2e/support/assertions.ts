@@ -9,11 +9,7 @@ export const expectMeta = (body: any, options?: { requestId?: string }) => {
 
 export const expectSuccessEnvelope = (
   body: any,
-  options?: {
-    message?: string;
-    hasData?: boolean;
-    requestId?: string;
-  },
+  options?: { message?: string; hasData?: boolean; requestId?: string },
 ) => {
   expect(body.success).toBe(true);
 
@@ -32,17 +28,10 @@ export const expectSuccessEnvelope = (
 
 export const expectErrorEnvelope = (
   body: any,
-  options: {
-    code: string;
-    message?: string;
-  },
+  options: { code: string; message?: string },
 ) => {
   expect(body.success).toBe(false);
-  expect(body.error).toEqual(
-    expect.objectContaining({
-      code: options.code,
-    }),
-  );
+  expect(body.error).toEqual(expect.objectContaining({ code: options.code }));
 
   if (options.message) {
     expect(body.message).toBe(options.message);

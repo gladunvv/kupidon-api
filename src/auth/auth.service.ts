@@ -6,7 +6,7 @@ import { Response } from 'express';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OtpService } from '../otp/otp.service';
-import { ERROR_CODES } from 'src/core/http/error-codes';
+import { ERROR_CODES } from '../core/http/error-codes';
 
 @Injectable()
 export class AuthService {

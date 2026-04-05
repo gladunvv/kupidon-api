@@ -10,8 +10,8 @@ import {
 import { CreateDialogDto } from './dto/dialog-create.dto';
 import { SendMessageDto } from './dto/dialog-send-message.dto';
 import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
-import { ResponseMessage } from 'src/core/decorators/response-message.decorator';
-import { CurrentUser } from 'src/core/decorators/current-user.decorator';
+import { ResponseMessage } from '../core/decorators/response-message.decorator';
+import { CurrentUser } from '../core/decorators/current-user.decorator';
 
 @ApiTags('Dialogs')
 @ApiBearerAuth()
