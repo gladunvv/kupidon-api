@@ -5,7 +5,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { Public } from '../core/decorators/public.decorator';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequestOtpDto } from './dto/request-otp.dto';
-import { ResponseMessage } from 'src/core/decorators/response-message.decorator';
+import { ResponseMessage } from '../core/decorators/response-message.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')

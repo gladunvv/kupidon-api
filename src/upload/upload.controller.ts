@@ -21,6 +21,8 @@ import {
 } from '@nestjs/swagger';
 import { UploadPhotosDto } from './dto/upload-photos.dto';
 import { DeletePhotoDto } from './dto/delete-photos.dto';
+import { ResponseMessage } from '../core/decorators/response-message.decorator';
+import { CurrentUser } from '../core/decorators/current-user.decorator';
 
 @ApiTags('Upload')
 @ApiBearerAuth()
