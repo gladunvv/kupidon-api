@@ -16,7 +16,7 @@ import { Types } from 'mongoose';
 
 @WebSocketGateway({
   cors: {
-    origin: 'http://localhost:5173',
+    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     credentials: true,
   },
 })
@@ -85,7 +85,7 @@ export class ChatGateway
       const userId = client.data.userId;
 
       if (!dialogId) {
-        client.emit('error', { message: 'Dialog ID is required' });
+        client.emit('chat_error', { message: 'Dialog ID is required' });
         return;
       }
 
@@ -95,7 +95,9 @@ export class ChatGateway
       );
 
       if (!dialog) {
-        client.emit('error', { message: 'Dialog not found or access denied' });
+        client.emit('chat_error', {
+          message: 'Dialog not found or access denied',
+        });
         return;
       }
 
@@ -109,7 +111,7 @@ export class ChatGateway
       });
     } catch (error) {
       this.logger.error(`Error joining dialog: ${error.message}`);
-      client.emit('error', { message: 'Failed to join dialog' });
+      client.emit('chat_error', { message: 'Failed to join dialog' });
     }
   }
 
@@ -141,12 +143,11 @@ export class ChatGateway
       const userId = client.data.userId;
 
       if (!dialogId || !text || text.trim().length === 0) {
-        client.emit('error', {
+        client.emit('chat_error', {
           message: 'Dialog ID and message text are required',
         });
         return;
       }
-
       const message = await this.dialogService.sendMessage(
         dialogId,
         userId,
@@ -167,18 +168,19 @@ export class ChatGateway
           name: sender.name,
         },
         dialogId,
-        created_at: (message as { created_at?: Date }).created_at,
+        created_at: message.created_at,
         isFromCurrentUser: userId === senderId,
       });
 
       this.logger.log(`Message sent in dialog ${dialogId} by user ${userId}`);
     } catch (error) {
       this.logger.error(`Error sending message: ${error.message}`);
-      client.emit('error', { message: 'Failed to send message' });
+      client.emit('chat_error', { message: 'Failed to send message' });
     }
   }
 
-  sendNotificationToUser(userId: string, event: string, data: unknown) {
-    this.server.emit(`user_${userId}`, { event, data });
-  }
+  // TODO
+  // sendNotificationToUser(userId: string, event: string, data: unknown) {
+  //   this.server.emit(`user_${userId}`, { event, data });
+  // }
 }

@@ -13,9 +13,6 @@ export class Dialog {
   @Prop({ type: Types.ObjectId, ref: 'Match' })
   matchId: Types.ObjectId;
 
-  @Prop({ type: [Types.ObjectId], ref: 'Message' })
-  messages: Message[];
-
   @Prop({ type: Types.ObjectId, ref: 'User' })
   user1: Types.ObjectId;
 

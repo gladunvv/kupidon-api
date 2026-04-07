@@ -12,6 +12,7 @@ import { Dialog, DialogDocument } from './schemas/dialog.schema';
 import { Message, MessageDocument } from './schemas/message.schema';
 import { Match, MatchDocument } from '../match/schemas/match.schema';
 import { StatusMessage } from './schemas/message.schema';
+import { EncryptionService } from '../encryption/encryption.service';
 
 const PARTNER_FIELDS_FULL = { name: 1, age: 1, photos: 1, about: 1 };
 const PARTNER_FIELDS_LIST = {
@@ -28,6 +29,7 @@ export class DialogService {
     private readonly messageModel: Model<MessageDocument>,
     @InjectModel(Match.name)
     private readonly matchModel: Model<MatchDocument>,
+    private readonly encryptionService: EncryptionService,
   ) {}
 
   async getDialog(dialogId: string) {
@@ -52,8 +54,8 @@ export class DialogService {
         {
           $lookup: {
             from: 'messages',
-            localField: 'messages',
-            foreignField: '_id',
+            localField: '_id',
+            foreignField: 'dialogId',
             as: 'messagesData',
             pipeline: [
               {
@@ -73,7 +75,11 @@ export class DialogService {
               },
               {
                 $project: {
-                  text: 1,
+                  _id: 1,
+                  ciphertext: 1,
+                  iv: 1,
+                  authTag: 1,
+                  keyVersion: 1,
                   sender: { _id: '$sender', name: '$senderName' },
                   isFromCurrentUser: 1,
                   created_at: 1,
@@ -102,7 +108,12 @@ export class DialogService {
       throw new NotFoundException('Dialog not found or access denied');
     }
 
-    return dialogs[0];
+    return {
+      ...dialogs[0],
+      messages: dialogs[0].messages.map((message) =>
+        this.decryptMessage(message),
+      ),
+    };
   }
 
   async sendMessage(dialogId: string, senderId: string, text: string) {
@@ -111,29 +122,36 @@ export class DialogService {
       throw new NotFoundException('Dialog not found');
     }
 
+    const encryptedText = this.encryptionService.encrypt(text);
+
     const message = new this.messageModel({
       sender: new Types.ObjectId(senderId),
       status: StatusMessage.SEND,
-      text,
+      ciphertext: encryptedText.ciphertext,
+      iv: encryptedText.iv,
+      authTag: encryptedText.authTag,
+      keyVersion: encryptedText.keyVersion,
     });
     await message.save();
 
-    await this.dialogModel.findByIdAndUpdate(dialogId, {
-      $push: { messages: message._id },
-      lastMessage: message._id,
-      updated_at: new Date(),
-    });
+    await this.updateLastMessage(dialogId, message._id.toString());
 
     const populated = await this.messageModel
       .findById(message._id)
       .populate('sender', 'name')
+      .select('-ciphertext -iv -authTag -keyVersion')
       .exec();
 
     if (!populated) {
       throw new NotFoundException('Message not found');
     }
 
-    return populated;
+    return {
+      _id: populated._id,
+      text,
+      sender: populated.sender,
+      created_at: populated.created_at,
+    };
   }
 
   async createDialog(matchId: string) {
@@ -156,7 +174,7 @@ export class DialogService {
   async getUserDialogs(userId: string) {
     const userObjectId = new Types.ObjectId(userId);
 
-    return this.dialogModel
+    const dialogs = await this.dialogModel
       .aggregate([
         dialogsForUserMatch(userObjectId),
         addPartnerId(userObjectId),
@@ -184,7 +202,10 @@ export class DialogService {
               },
               {
                 $project: {
-                  text: 1,
+                  ciphertext: 1,
+                  iv: 1,
+                  authTag: 1,
+                  keyVersion: 1,
                   sender: { _id: '$sender', name: '$senderName' },
                   created_at: 1,
                 },
@@ -211,6 +232,29 @@ export class DialogService {
         { $sort: { updated_at: -1 } },
       ])
       .exec();
+
+    return dialogs.map((dialog) => ({
+      ...dialog,
+      lastMessage: this.decryptMessage(dialog.lastMessage),
+    }));
+  }
+
+  private decryptMessage(message: any) {
+    if (!message) {
+      return null;
+    }
+
+    return {
+      _id: message._id,
+      text: this.encryptionService.decrypt({
+        ciphertext: message.ciphertext,
+        iv: message.iv,
+        authTag: message.authTag,
+        keyVersion: message.keyVersion,
+      }),
+      sender: message.sender,
+      created_at: message.created_at,
+    };
   }
 
   async updateLastMessage(dialogId: string, messageId: string) {

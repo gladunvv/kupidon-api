@@ -55,7 +55,6 @@ export const CitySchema = SchemaFactory.createForClass(City);
 
 CitySchema.index({ name: 'text', fullName: 'text', aliases: 'text' });
 CitySchema.index({ countryCode: 1, popularity: -1 });
-CitySchema.index({ coordinates: '2dsphere' });
 
 @Module({
   imports: [

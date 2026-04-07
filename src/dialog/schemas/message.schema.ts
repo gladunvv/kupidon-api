@@ -18,8 +18,20 @@ export class Message {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   sender: Types.ObjectId;
 
-  @Prop({ type: String, ref: 'User', required: true })
-  text: string;
+  @Prop({ type: Types.ObjectId, ref: 'Dialog', required: true, index: true })
+  dialogId: Types.ObjectId;
+
+  @Prop({ type: String })
+  ciphertext: string;
+
+  @Prop({ type: String })
+  iv: string;
+
+  @Prop({ type: String })
+  authTag: string;
+
+  @Prop({ type: Number })
+  keyVersion: number;
 
   @Prop({
     type: Number,
@@ -28,6 +40,9 @@ export class Message {
     default: StatusMessage.SEND,
   })
   status: StatusMessage;
+
+  created_at: Date;
+  updated_at: Date;
 }
 
 const MessageSchema = SchemaFactory.createForClass(Message);
