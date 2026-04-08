@@ -14,6 +14,9 @@ export class Match {
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   user2: Types.ObjectId;
+
+  created_at: Date;
+  updated_at: Date;
 }
 
 const MatchSchema = SchemaFactory.createForClass(Match);

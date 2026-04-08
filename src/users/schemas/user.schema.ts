@@ -91,9 +91,7 @@ export class User {
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
-UserSchema.index({ phone: 1 }, { unique: true });
 UserSchema.index({ city: 1, isActive: 1 });
-UserSchema.index({ coordinates: '2dsphere' });
 UserSchema.index({ age: 1, gender: 1, isActive: 1 });
 UserSchema.index({ lastActiveAt: -1 });
 

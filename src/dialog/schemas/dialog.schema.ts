@@ -1,6 +1,5 @@
 import { Document, Types } from 'mongoose';
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Message } from './message.schema';
 import { Module } from '@nestjs/common';
 
 export type DialogDocument = Dialog & Document;
@@ -12,9 +11,6 @@ export type DialogDocument = Dialog & Document;
 export class Dialog {
   @Prop({ type: Types.ObjectId, ref: 'Match' })
   matchId: Types.ObjectId;
-
-  @Prop({ type: [Types.ObjectId], ref: 'Message' })
-  messages: Message[];
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
   user1: Types.ObjectId;

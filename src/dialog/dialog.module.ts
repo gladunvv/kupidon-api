@@ -5,17 +5,14 @@ import { ChatGateway } from '../gateway/chat.gateway';
 import { DialogMongoModule } from './schemas/dialog.schema';
 import { MessageMongoModule } from './schemas/message.schema';
 import { MatchMongoModule } from '../match/schemas/match.schema';
-import { JwtModule } from '@nestjs/jwt';
+import { EncryptionModule } from '../encryption/encryption.module';
 
 @Module({
   imports: [
     DialogMongoModule,
     MessageMongoModule,
     MatchMongoModule,
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret',
-      signOptions: { expiresIn: '1h' },
-    }),
+    EncryptionModule,
   ],
   providers: [DialogService, ChatGateway],
   controllers: [DialogController],

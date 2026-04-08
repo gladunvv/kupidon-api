@@ -10,6 +10,7 @@ import {
 import { Like, LikeDocument } from './schemas/like.schema';
 import { Match, MatchDocument } from './schemas/match.schema';
 import { Dialog, DialogDocument } from '../dialog/schemas/dialog.schema';
+import { Message, MessageDocument } from '../dialog/schemas/message.schema';
 
 const PARTNER_FIELDS = { name: 1, age: 1, photos: 1, about: 1 };
 
@@ -18,6 +19,8 @@ export class MatchService {
   constructor(
     @InjectModel(Like.name) private readonly likeModel: Model<LikeDocument>,
     @InjectModel(Match.name) private readonly matchModel: Model<MatchDocument>,
+    @InjectModel(Message.name)
+    private readonly messageModel: Model<MessageDocument>,
     @InjectModel(Dialog.name)
     private readonly dialogModel: Model<DialogDocument>,
   ) {}
@@ -188,16 +191,31 @@ export class MatchService {
       })
       .exec();
 
+    if (!dialog) {
+      return {
+        match: {
+          _id: match._id,
+          created_at: match.created_at,
+        },
+        partner,
+        dialog: null,
+      };
+    }
+
+    const hasMessages = await this.messageModel.exists({
+      dialogId: dialog._id,
+    });
+
     return {
       match: {
         _id: match._id,
-        created_at: (match as MatchDocument & { created_at?: Date }).created_at,
+        created_at: match.created_at,
       },
       partner,
       dialog: dialog
         ? {
             _id: dialog._id,
-            hasMessages: dialog.messages.length > 0,
+            hasMessages: Boolean(hasMessages),
             lastMessage: dialog.lastMessage,
             isActive: dialog.isActive,
           }

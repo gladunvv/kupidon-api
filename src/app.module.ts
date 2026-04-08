@@ -15,18 +15,30 @@ import { LikeMongoModule } from './match/schemas/like.schema';
 import { MatchMongoModule } from './match/schemas/match.schema';
 import { DialogMongoModule } from './dialog/schemas/dialog.schema';
 import { MessageMongoModule } from './dialog/schemas/message.schema';
-
+import { EncryptionModule } from './encryption/encryption.module';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import configuration from './config/load-yaml.config';
 @Module({
   imports: [
+    ConfigModule.forRoot({
+      isGlobal: true,
+      ignoreEnvFile: true,
+      skipProcessEnv: true,
+      load: [configuration],
+    }),
     MongooseModule.forRootAsync({
-      useFactory: async () => ({
-        uri: process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/datingapp',
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        uri: configService.getOrThrow<string>('mongodb.uri'),
       }),
     }),
-    RedisModule.forRoot({
-      config: {
-        url: process.env.REDIS_URL || 'redis://127.0.0.1:6379',
-      },
+    RedisModule.forRootAsync({
+      inject: [ConfigService],
+      useFactory: async (configService: ConfigService) => ({
+        config: {
+          url: configService.getOrThrow<string>('redis.url'),
+        },
+      }),
     }),
     AuthModule,
     UsersModule,
@@ -39,6 +51,7 @@ import { MessageMongoModule } from './dialog/schemas/message.schema';
     MatchMongoModule,
     DialogMongoModule,
     MessageMongoModule,
+    EncryptionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

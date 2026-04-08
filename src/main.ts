@@ -9,24 +9,18 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
 import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-
-const ALLOWED_ORIGINS = [
-  'http://localhost:5174',
-  'http://localhost:5173',
-  'http://kupidons.ru',
-  'https://kupidons.ru',
-  'https://www.kupidons.ru',
-];
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
-
+  const configService = app.get(ConfigService);
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Kupidon API')
     .setDescription('OpenAPI schema for Kupidon backend')
     .setVersion('1.0')
     .addBearerAuth()
     .build();
+
   const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
   SwaggerModule.setup('docs', app, swaggerDocument, {
     jsonDocumentUrl: 'docs-json',
@@ -42,11 +36,14 @@ async function bootstrap() {
   const reflector = app.get(Reflector);
   app.useGlobalInterceptors(new ResponseInterceptor(reflector));
   app.useGlobalGuards(new JwtAuthGuard(reflector));
+  const allowedOrigins = configService.getOrThrow<string[]>(
+    'app.cors.allowedOrigins',
+  );
 
   app.enableCors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
-      if (ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
       cb(new Error(`CORS blocked: ${origin}`));
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
@@ -54,7 +51,7 @@ async function bootstrap() {
     credentials: true,
   });
 
-  await app.listen(8000);
+  await app.listen(configService.getOrThrow<number>('app.port'));
 }
 
 bootstrap();

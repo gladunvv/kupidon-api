@@ -8,12 +8,19 @@ import { UsersModule } from '../users/users.module';
 import { PassportModule } from '@nestjs/passport';
 import { OtpModule } from '../otp/otp.module';
 import { UserMongoModule } from '../users/schemas/user.schema';
+import { ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'secret',
-      signOptions: { expiresIn: '1h' },
+    JwtModule.registerAsync({
+      inject: [ConfigService],
+      global: true,
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.getOrThrow<string>('jwt.secret'),
+        signOptions: {
+          expiresIn: configService.getOrThrow<string>('jwt.expiresIn'),
+        },
+      }),
     }),
     UserMongoModule,
     UsersModule,
