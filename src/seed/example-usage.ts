@@ -10,7 +10,7 @@ import { runSeedWithIsolation } from './seed-bootstrap';
  */
 async function quickSeedExample() {
   console.log('📝 Пример 1: Быстрое заполнение');
-  
+
   try {
     const stats = await SeedUtil.seedAll();
     console.log('✅ Заполнение завершено:', stats);
@@ -24,13 +24,13 @@ async function quickSeedExample() {
  */
 async function specificModelsExample() {
   console.log('📝 Пример 2: Заполнение конкретных моделей');
-  
+
   try {
     // Заполняем только цели и интересы без очистки
-    const stats = await SeedUtil.seedModels(
-      ['goals', 'interests'], 
-      { clearExisting: false, verbose: true }
-    );
+    const stats = await SeedUtil.seedModels(['goals', 'interests'], {
+      clearExisting: false,
+      verbose: true,
+    });
     console.log('✅ Заполнение завершено:', stats);
   } catch (error) {
     console.error('❌ Ошибка:', error);
@@ -42,7 +42,7 @@ async function specificModelsExample() {
  */
 async function lowLevelExample() {
   console.log('📝 Пример 3: Низкоуровневый API');
-  
+
   try {
     const stats = await runSeedWithIsolation({
       clearExisting: true,
@@ -60,9 +60,11 @@ async function lowLevelExample() {
  */
 async function healthCheckExample() {
   console.log('📝 Пример 4: Проверка здоровья');
-  
+
   const isHealthy = await SeedUtil.healthCheck();
-  console.log(`🏥 Статус сервиса: ${isHealthy ? '✅ Здоров' : '❌ Недоступен'}`);
+  console.log(
+    `🏥 Статус сервиса: ${isHealthy ? '✅ Здоров' : '❌ Недоступен'}`,
+  );
 }
 
 /**
@@ -70,16 +72,16 @@ async function healthCheckExample() {
  */
 async function sequentialSeedExample() {
   console.log('📝 Пример 5: Последовательное заполнение');
-  
+
   try {
     // Сначала заполняем базовые данные
     console.log('1. Заполняем lifestyle данные...');
     await SeedUtil.seedLifestyle();
-    
+
     // Затем добавляем цели и интересы
     console.log('2. Добавляем цели и интересы...');
     await SeedUtil.seedGoalsAndInterests(false); // без очистки
-    
+
     console.log('✅ Последовательное заполнение завершено');
   } catch (error) {
     console.error('❌ Ошибка:', error);
@@ -92,21 +94,21 @@ async function sequentialSeedExample() {
 async function runAllExamples() {
   console.log('🚀 Запуск примеров использования Seed сервиса');
   console.log('='.repeat(50));
-  
+
   await quickSeedExample();
   console.log();
-  
+
   await specificModelsExample();
   console.log();
-  
+
   await lowLevelExample();
   console.log();
-  
+
   await healthCheckExample();
   console.log();
-  
+
   await sequentialSeedExample();
-  
+
   console.log('\n🎉 Все примеры выполнены!');
 }
 

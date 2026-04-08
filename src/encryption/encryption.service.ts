@@ -1,4 +1,5 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
 
 type EncryptedPayload = {
@@ -14,24 +15,9 @@ export class EncryptionService {
   private readonly keyVersion = 1;
   private readonly key: Buffer;
 
-  constructor() {
-    const rawKey = process.env.ENCRYPTION_KEY;
-
-    if (!rawKey) {
-      throw new InternalServerErrorException(
-        'ENCRYPTION_KEY is not configured',
-      );
-    }
-
-    const key = Buffer.from(rawKey, 'hex');
-
-    if (key.length !== 32) {
-      throw new InternalServerErrorException(
-        'ENCRYPTION_KEY must be 32 bytes encoded as hex',
-      );
-    }
-
-    this.key = key;
+  constructor(private readonly configService: ConfigService) {
+    const rawKey = this.configService.getOrThrow<string>('encryption.key');
+    this.key = Buffer.from(rawKey, 'hex');
   }
 
   encrypt(plaintext: string): EncryptedPayload {

@@ -41,7 +41,6 @@
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
     "ioredis": "^5.5.0",
-    "joi": "^18.1.2",
     "mongoose": "^8.4.0",
     "multer": "^2.0.2",
     "passport-jwt": "^4.0.1",

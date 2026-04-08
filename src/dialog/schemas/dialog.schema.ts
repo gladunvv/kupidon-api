@@ -1,6 +1,5 @@
 import { Document, Types } from 'mongoose';
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Message } from './message.schema';
 import { Module } from '@nestjs/common';
 
 export type DialogDocument = Dialog & Document;

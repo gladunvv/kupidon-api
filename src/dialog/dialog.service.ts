@@ -125,6 +125,7 @@ export class DialogService {
     const encryptedText = this.encryptionService.encrypt(text);
 
     const message = new this.messageModel({
+      dialogId: new Types.ObjectId(dialogId),
       sender: new Types.ObjectId(senderId),
       status: StatusMessage.SEND,
       ciphertext: encryptedText.ciphertext,
@@ -214,17 +215,11 @@ export class DialogService {
           },
         },
         {
-          $addFields: {
-            messagesCount: { $size: '$messages' },
-          },
-        },
-        {
           $project: {
             _id: 1,
             matchId: 1,
             partner: { $arrayElemAt: ['$partner', 0] },
             lastMessage: { $arrayElemAt: ['$lastMessageData', 0] },
-            messagesCount: 1,
             updated_at: 1,
             isActive: 1,
           },
