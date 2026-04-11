@@ -81,8 +81,7 @@ export class MatchService {
     await match.save();
 
     const dialog = new this.dialogModel({
-      matchId: match._id,
-      messages: [],
+      matchId: new Types.ObjectId(match._id.toString()),
       user1: userObjectId,
       user2: otherUserId,
       isActive: true,
@@ -108,38 +107,10 @@ export class MatchService {
             as: 'dialog',
             pipeline: [
               {
-                $lookup: {
-                  from: 'messages',
-                  localField: 'lastMessage',
-                  foreignField: '_id',
-                  as: 'lastMessagesData',
-                  pipeline: [
-                    {
-                      $project: {
-                        text: 1,
-                        sender: 1,
-                        created_at: 1,
-                      },
-                    },
-                  ],
-                },
-              },
-              {
                 $project: {
-                  messagesCount: { $size: '$messages' },
-                  lastMessagesData: {
-                    $arrayElemAt: ['$lastMessagesData', 0],
+                  hasLastMessage: {
+                    $ne: [{ $ifNull: ['$lastMessage', null] }, null],
                   },
-                },
-              },
-              {
-                $project: {
-                  user1: 0,
-                  user2: 0,
-                  created_at: 0,
-                  lastMessage: 0,
-                  messages: 0,
-                  __v: 0,
                 },
               },
             ],
@@ -151,7 +122,6 @@ export class MatchService {
             created_at: 1,
             partner: { $arrayElemAt: ['$partner', 0] },
             dialog: { $arrayElemAt: ['$dialog', 0] },
-            hasDialog: { $gt: [{ $size: '$dialog' }, 0] },
           },
         },
         { $sort: { created_at: -1 } },

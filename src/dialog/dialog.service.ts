@@ -95,7 +95,6 @@ export class DialogService {
             matchId: 1,
             partner: { $arrayElemAt: ['$partner', 0] },
             messages: '$messagesData',
-            messagesCount: { $size: '$messagesData' },
             isActive: 1,
             created_at: 1,
             updated_at: 1,
@@ -161,10 +160,9 @@ export class DialogService {
       throw new NotFoundException('Match not found');
     }
     const dialog = new this.dialogModel({
-      matchId,
+      matchId: new Types.ObjectId(matchId),
       user1: match.user1,
       user2: match.user2,
-      messages: [],
     });
 
     await dialog.save();

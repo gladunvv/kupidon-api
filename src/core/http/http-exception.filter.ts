@@ -32,7 +32,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         message = exceptionResponse;
       } else if (typeof exceptionResponse === 'object') {
         const responseObj = exceptionResponse as Record<string, unknown> & {
-          message?: string | string[];
+          message?: string | string[] | Record<string, string>;
           error?: string;
           details?: unknown;
           code?: string;
@@ -41,6 +41,8 @@ export class HttpExceptionFilter implements ExceptionFilter {
           message = responseObj.message;
         } else if (Array.isArray(responseObj.message)) {
           message = responseObj.message.join(', ');
+        } else if (typeof responseObj.message === 'object') {
+          message = Object.values(responseObj.message).join(', ');
         } else if (typeof responseObj.error === 'string') {
           message = responseObj.error;
         }

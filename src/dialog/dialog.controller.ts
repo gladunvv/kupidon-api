@@ -61,7 +61,6 @@ export class DialogController {
     return {
       messages: dialog.messages,
       partner: dialog.partner,
-      messagesCount: dialog.messagesCount,
     };
   }
 
