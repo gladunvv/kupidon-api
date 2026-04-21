@@ -15,12 +15,6 @@ import {
 } from '../reference/schemas';
 import { SeedDataService } from './seed-data.service';
 
-export interface SeedOptions {
-  clearExisting?: boolean;
-  models?: string[];
-  verbose?: boolean;
-}
-
 @Injectable()
 export class SeedService {
   private readonly logger = new Logger(SeedService.name);
@@ -44,194 +38,49 @@ export class SeedService {
     private readonly seedDataService: SeedDataService,
   ) {}
 
-  /**
-   * Запускает процесс заполнения базы данных
-   */
-  async run(options: SeedOptions = {}): Promise<void> {
-    const { clearExisting = true, models = ['all'], verbose = true } = options;
+  async run(): Promise<Record<string, number>> {
+    this.logger.log('Seeding reference data');
 
-    this.logger.log('🌱 Начинаем заполнение базы данных...');
-
-    try {
-      if (models.includes('all') || models.includes('lifestyle-categories')) {
-        await this.seedLifestyleCategories(clearExisting, verbose);
-      }
-
-      if (models.includes('all') || models.includes('lifestyle-options')) {
-        await this.seedLifestyleOptions(clearExisting, verbose);
-      }
-
-      if (models.includes('all') || models.includes('goals')) {
-        await this.seedGoals(clearExisting, verbose);
-      }
-
-      if (models.includes('all') || models.includes('interests')) {
-        await this.seedInterests(clearExisting, verbose);
-      }
-
-      if (models.includes('all') || models.includes('cities')) {
-        await this.seedCities(clearExisting, verbose);
-      }
-
-      this.logger.log('✅ Заполнение базы данных завершено успешно!');
-    } catch (error) {
-      this.logger.error('❌ Ошибка при заполнении базы данных:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Заполняет категории образа жизни
-   */
-  private async seedLifestyleCategories(
-    clearExisting: boolean,
-    verbose: boolean,
-  ): Promise<void> {
-    const modelName = 'LifestyleCategory';
-
-    if (clearExisting) {
-      await this.clearModel(this.lifestyleCategoryModel, modelName, verbose);
-    }
-
-    const categories = this.seedDataService.getLifestyleCategories();
-    await this.insertData(
+    await this.replaceCollection(
       this.lifestyleCategoryModel,
-      categories,
-      modelName,
-      verbose,
+      this.seedDataService.getLifestyleCategories(),
     );
-  }
-
-  /**
-   * Заполняет опции образа жизни
-   */
-  private async seedLifestyleOptions(
-    clearExisting: boolean,
-    verbose: boolean,
-  ): Promise<void> {
-    const modelName = 'LifestyleOption';
-
-    if (clearExisting) {
-      await this.clearModel(this.lifestyleOptionModel, modelName, verbose);
-    }
-
-    const options = this.seedDataService.getLifestyleOptions();
-    await this.insertData(
+    await this.replaceCollection(
       this.lifestyleOptionModel,
-      options,
-      modelName,
-      verbose,
+      this.seedDataService.getLifestyleOptions(),
     );
+    await this.replaceCollection(
+      this.goalModel,
+      this.seedDataService.getGoals(),
+    );
+    await this.replaceCollection(
+      this.interestModel,
+      this.seedDataService.getInterests(),
+    );
+    await this.replaceCollection(
+      this.cityModel,
+      this.seedDataService.getCities(),
+    );
+
+    const stats = await this.getStats();
+    this.logger.log(
+      `Seed completed: lifestyleCategories=${stats.lifestyleCategories}, lifestyleOptions=${stats.lifestyleOptions}, goals=${stats.goals}, interests=${stats.interests}, cities=${stats.cities}`,
+    );
+
+    return stats;
   }
 
-  /**
-   * Заполняет цели
-   */
-  private async seedGoals(
-    clearExisting: boolean,
-    verbose: boolean,
-  ): Promise<void> {
-    const modelName = 'Goal';
-
-    if (clearExisting) {
-      await this.clearModel(this.goalModel, modelName, verbose);
-    }
-
-    const goals = this.seedDataService.getGoals();
-    await this.insertData(this.goalModel, goals, modelName, verbose);
-  }
-
-  /**
-   * Заполняет интересы
-   */
-  private async seedInterests(
-    clearExisting: boolean,
-    verbose: boolean,
-  ): Promise<void> {
-    const modelName = 'Interest';
-
-    if (clearExisting) {
-      await this.clearModel(this.interestModel, modelName, verbose);
-    }
-
-    const interests = this.seedDataService.getInterests();
-    await this.insertData(this.interestModel, interests, modelName, verbose);
-  }
-
-  /**
-   * Заполняет города
-   */
-  private async seedCities(
-    clearExisting: boolean,
-    verbose: boolean,
-  ): Promise<void> {
-    const modelName = 'City';
-
-    if (clearExisting) {
-      await this.clearModel(this.cityModel, modelName, verbose);
-    }
-
-    const cities = this.seedDataService.getCities();
-    await this.insertData(this.cityModel, cities, modelName, verbose);
-  }
-
-  /**
-   * Очищает модель от существующих данных
-   */
-  private async clearModel(
-    model: Model<any>,
-    modelName: string,
-    verbose: boolean,
-  ): Promise<void> {
-    const count = await model.countDocuments();
-    if (count > 0) {
-      await model.deleteMany({});
-      if (verbose) {
-        this.logger.log(`🗑️  Удалено ${count} записей из ${modelName}`);
-      }
-    }
-  }
-
-  /**
-   * Вставляет данные в модель
-   */
-  private async insertData(
+  private async replaceCollection(
     model: Model<any>,
     data: any[],
-    modelName: string,
-    verbose: boolean,
   ): Promise<void> {
-    if (data.length === 0) {
-      if (verbose) {
-        this.logger.warn(`⚠️  Нет данных для вставки в ${modelName}`);
-      }
-      return;
-    }
+    await model.deleteMany({});
 
-    try {
-      await model.insertMany(data, { ordered: false });
-      if (verbose) {
-        this.logger.log(`✨ Добавлено ${data.length} записей в ${modelName}`);
-      }
-    } catch (error) {
-      // Игнорируем ошибки дублирования ключей
-      if (error.code === 11000) {
-        const insertedCount =
-          data.length - error.result.writeErrors?.length || 0;
-        if (verbose) {
-          this.logger.log(
-            `✨ Добавлено ${insertedCount} записей в ${modelName} (некоторые уже существовали)`,
-          );
-        }
-      } else {
-        throw error;
-      }
+    if (data.length > 0) {
+      await model.insertMany(data);
     }
   }
 
-  /**
-   * Получает статистику по всем моделям
-   */
   async getStats(): Promise<Record<string, number>> {
     const [
       lifestyleCategoriesCount,

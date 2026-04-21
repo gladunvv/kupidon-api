@@ -18,10 +18,7 @@
     "test:cov": "jest --config ./test/jest-e2e.json --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "ts-node -r tsconfig-paths/register src/seed/seed.command.ts",
-    "seed:build": "node dist/seed/seed.command.js",
-    "seed:test": "ts-node -r tsconfig-paths/register src/seed/test-isolated-seed.ts",
-    "seed:examples": "ts-node -r tsconfig-paths/register src/seed/example-usage.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/seed/seed.command.ts"
   },
   "dependencies": {
     "@liaoliaots/nestjs-redis": "^10.0.0",

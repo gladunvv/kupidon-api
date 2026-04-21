@@ -3,9 +3,6 @@ import { Types } from 'mongoose';
 
 @Injectable()
 export class SeedDataService {
-  /**
-   * Возвращает данные для категорий образа жизни
-   */
   getLifestyleCategories() {
     return [
       {
@@ -41,12 +38,8 @@ export class SeedDataService {
     ];
   }
 
-  /**
-   * Возвращает данные для опций образа жизни
-   */
   getLifestyleOptions() {
     return [
-      // Дети
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439021'),
         label: 'Нет детей',
@@ -72,7 +65,6 @@ export class SeedDataService {
         category: new Types.ObjectId('507f1f77bcf86cd799439011'),
       },
 
-      // Курение
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439031'),
         label: 'Не курю',
@@ -92,7 +84,6 @@ export class SeedDataService {
         category: new Types.ObjectId('507f1f77bcf86cd799439012'),
       },
 
-      // Алкоголь
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439041'),
         label: 'Не пью',
@@ -112,7 +103,6 @@ export class SeedDataService {
         category: new Types.ObjectId('507f1f77bcf86cd799439013'),
       },
 
-      // Питомцы
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439051'),
         label: 'Нет питомцев',
@@ -138,7 +128,6 @@ export class SeedDataService {
         category: new Types.ObjectId('507f1f77bcf86cd799439014'),
       },
 
-      // Спорт
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439061'),
         label: 'Не занимаюсь спортом',
@@ -164,7 +153,6 @@ export class SeedDataService {
         category: new Types.ObjectId('507f1f77bcf86cd799439015'),
       },
 
-      // Питание
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439071'),
         label: 'Всеядный',
@@ -192,9 +180,6 @@ export class SeedDataService {
     ];
   }
 
-  /**
-   * Возвращает данные для целей знакомств
-   */
   getGoals() {
     return [
       {
@@ -256,19 +241,15 @@ export class SeedDataService {
     ];
   }
 
-  /**
-   * Возвращает данные для городов
-   */
   getCities() {
     return [
-      // Россия
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439f01'),
         name: 'Москва',
         fullName: 'Москва, Россия',
         countryCode: 'RU',
         region: 'Московская область',
-        coordinates: [37.6176, 55.7558], // [longitude, latitude]
+        coordinates: [37.6176, 55.7558],
         population: 12500000,
         popularity: 100,
         timezone: 'Europe/Moscow',
@@ -323,7 +304,6 @@ export class SeedDataService {
         aliases: ['Kazan'],
       },
 
-      // США
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439f11'),
         name: 'New York',
@@ -361,7 +341,6 @@ export class SeedDataService {
         aliases: ['Чикаго'],
       },
 
-      // Европа
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439f21'),
         name: 'Berlin',
@@ -411,7 +390,6 @@ export class SeedDataService {
         aliases: ['Амстердам'],
       },
 
-      // Азия
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439f31'),
         name: 'Tokyo',
@@ -451,12 +429,8 @@ export class SeedDataService {
     ];
   }
 
-  /**
-   * Возвращает данные для интересов
-   */
   getInterests() {
     return [
-      // Спорт и активность
       {
         _id: new Types.ObjectId('507f1f77bcf86cd799439091'),
         label: 'Фитнес',
@@ -498,7 +472,6 @@ export class SeedDataService {
         tags: ['sport', 'outdoor', 'transport'],
       },
 
-      // Творчество
       {
         _id: new Types.ObjectId('507f1f77bcf86cd7994390a1'),
         label: 'Рисование',
@@ -540,7 +513,6 @@ export class SeedDataService {
         tags: ['food', 'creativity', 'home'],
       },
 
-      // Развлечения
       {
         _id: new Types.ObjectId('507f1f77bcf86cd7994390b1'),
         label: 'Кино',
@@ -574,7 +546,6 @@ export class SeedDataService {
         tags: ['art', 'culture', 'performance'],
       },
 
-      // Путешествия и природа
       {
         _id: new Types.ObjectId('507f1f77bcf86cd7994390c1'),
         label: 'Путешествия',
@@ -608,7 +579,6 @@ export class SeedDataService {
         tags: ['vacation', 'sun', 'relaxation'],
       },
 
-      // Образование и развитие
       {
         _id: new Types.ObjectId('507f1f77bcf86cd7994390d1'),
         label: 'Изучение языков',
@@ -642,7 +612,6 @@ export class SeedDataService {
         tags: ['mind', 'behavior', 'understanding'],
       },
 
-      // Социальная активность
       {
         _id: new Types.ObjectId('507f1f77bcf86cd7994390e1'),
         label: 'Волонтерство',

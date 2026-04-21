@@ -1,28 +1,26 @@
-import { runSeedWithIsolation } from './seed-bootstrap';
+import { Logger } from '@nestjs/common';
+import { NestFactory } from '@nestjs/core';
+import { SeedService } from './seed.service';
+import { SeedStandaloneModule } from './seed-standalone.module';
+
+const logger = new Logger('SeedCommand');
 
 async function bootstrap() {
+  const app = await NestFactory.createApplicationContext(SeedStandaloneModule, {
+    logger: ['error', 'warn', 'log'],
+  });
+
   try {
-    // Получаем параметры из командной строки
-    const args = process.argv.slice(2);
-    const clearExisting = !args.includes('--no-clear');
-    const verbose = !args.includes('--quiet');
-
-    // Определяем модели для заполнения
-    let models = ['all'];
-    const modelsIndex = args.indexOf('--models');
-    if (modelsIndex !== -1 && args[modelsIndex + 1]) {
-      models = args[modelsIndex + 1].split(',');
-    }
-
-    // Запускаем seed с изолированным контекстом
-    await runSeedWithIsolation({
-      clearExisting,
-      models,
-      verbose,
-    });
+    const stats = await app.get(SeedService).run();
+    logger.log(`Reference data seeded: ${JSON.stringify(stats)}`);
   } catch (error) {
-    console.error('❌ Ошибка при заполнении:', error);
+    logger.error(
+      'Seeding failed',
+      error instanceof Error ? error.stack : String(error),
+    );
     process.exit(1);
+  } finally {
+    await app.close();
   }
 }
 
