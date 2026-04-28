@@ -5,6 +5,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Reflector } from '@nestjs/core';
 import { JwtModule, JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
@@ -29,8 +30,6 @@ import { MatchController } from '../../src/match/match.controller';
 import { MatchService } from '../../src/match/match.service';
 import { ReferenceController } from '../../src/reference/reference.controller';
 import { ReferenceService } from '../../src/reference/reference.service';
-import { SeedController } from '../../src/seed/seed.controller';
-import { SeedOptions, SeedService } from '../../src/seed/seed.service';
 import { UploadController } from '../../src/upload/upload.controller';
 import { UploadService } from '../../src/upload/upload.service';
 import { UsersController } from '../../src/users/users.controller';
@@ -671,32 +670,6 @@ class TestUploadService {
   }
 }
 
-@Injectable()
-class TestSeedService {
-  lastOptions: SeedOptions | null = null;
-
-  reset() {
-    this.lastOptions = null;
-  }
-
-  async run(options: SeedOptions = {}) {
-    if (options.models?.includes('broken')) {
-      throw new BadRequestException('Unsupported seed model');
-    }
-    this.lastOptions = options;
-  }
-
-  async getStats() {
-    return {
-      cities: 2,
-      goals: 1,
-      interests: 2,
-      lifestyleCategories: 1,
-      lifestyleOptions: 1,
-    };
-  }
-}
-
 export async function createTestApp() {
   process.env.JWT_SECRET = JWT_SECRET;
 
@@ -713,23 +686,32 @@ export async function createTestApp() {
       DialogController,
       ReferenceController,
       UploadController,
-      SeedController,
     ],
     providers: [
       AppService,
+      {
+        provide: ConfigService,
+        useValue: {
+          getOrThrow: (key: string) => {
+            if (key === 'jwt.secret') {
+              return JWT_SECRET;
+            }
+
+            throw new Error(`Unknown config key: ${key}`);
+          },
+        },
+      },
       JwtAuthGuard,
       JwtStrategy,
       TestUsersService,
       TestDialogService,
       TestUploadService,
-      TestSeedService,
       { provide: UsersService, useExisting: TestUsersService },
       { provide: AuthService, useClass: TestAuthService },
       { provide: MatchService, useClass: TestMatchService },
       { provide: DialogService, useExisting: TestDialogService },
       { provide: ReferenceService, useClass: TestReferenceService },
       { provide: UploadService, useExisting: TestUploadService },
-      { provide: SeedService, useExisting: TestSeedService },
     ],
   }).compile();
 
@@ -747,7 +729,6 @@ export async function createTestApp() {
   const users = app.get(TestUsersService);
   const dialogs = app.get(TestDialogService);
   const uploads = app.get(TestUploadService);
-  const seed = app.get(TestSeedService);
 
   return {
     app,
@@ -755,7 +736,6 @@ export async function createTestApp() {
       users.reset();
       dialogs.reset();
       uploads.reset();
-      seed.reset();
     },
   };
 }
