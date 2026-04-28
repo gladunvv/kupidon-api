@@ -16,7 +16,9 @@ export const setupE2EApp = () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    if (app) {
+      await app.close();
+    }
   });
 
   return { getApp: () => app };

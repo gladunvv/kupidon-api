@@ -94,10 +94,10 @@ describe('DialogController (e2e)', () => {
     expect(response.body.data).toEqual(
       expect.objectContaining({
         messages: expect.any(Array),
-        messagesCount: 1,
         partner: expect.any(Object),
       }),
     );
+    expect(response.body.data.messages).toHaveLength(1);
   });
 
   it('GET /dialogs/:id validates object id', async () => {

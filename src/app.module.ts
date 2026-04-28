@@ -7,7 +7,6 @@ import { UsersModule } from './users/users.module';
 import { MatchModule } from './match/match.module';
 import { DialogModule } from './dialog/dialog.module';
 import { UploadModule } from './upload/upload.module';
-import { SeedModule } from './seed/seed.module';
 import { ReferenceModule } from './reference/reference.module';
 
 import { RedisModule } from '@liaoliaots/nestjs-redis';
@@ -45,7 +44,6 @@ import configuration from './config/load-yaml.config';
     DialogModule,
     MatchModule,
     UploadModule,
-    SeedModule,
     ReferenceModule,
     LikeMongoModule,
     MatchMongoModule,
