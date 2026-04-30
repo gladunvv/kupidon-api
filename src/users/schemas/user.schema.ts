@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule, Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document, Types } from 'mongoose';
+import { Document, Types, SchemaTypes } from 'mongoose';
 
 export type UserDocument = User & Document;
 
@@ -27,16 +27,25 @@ export class User {
   @Prop({ type: [String], default: [] })
   photos: string[];
 
-  @Prop({ type: Types.ObjectId, ref: 'City' })
+  @Prop({ type: SchemaTypes.ObjectId, ref: 'City' })
   city?: Types.ObjectId;
 
-  @Prop({ type: [Types.ObjectId], ref: 'Interest', default: [] })
+  @Prop({
+    type: [{ type: SchemaTypes.ObjectId, ref: 'Interest' }],
+    default: [],
+  })
   interests: Types.ObjectId[];
 
-  @Prop({ type: [Types.ObjectId], ref: 'Goal', default: [] })
+  @Prop({
+    type: [{ type: SchemaTypes.ObjectId, ref: 'Goal' }],
+    default: [],
+  })
   goals: Types.ObjectId[];
 
-  @Prop({ type: [Types.ObjectId], ref: 'LifestyleOption', default: [] })
+  @Prop({
+    type: [{ type: SchemaTypes.ObjectId, ref: 'LifestyleOption' }],
+    default: [],
+  })
   lifestyleOptions: Types.ObjectId[];
 
   @Prop({ type: String })
