@@ -71,6 +71,25 @@ export class UsersService {
       { $match: genderFilter },
       {
         $lookup: {
+          from: 'interests',
+          localField: 'interests',
+          foreignField: '_id',
+          as: 'interests',
+        },
+      },
+      {
+        $addFields: {
+          interests: {
+            $map: {
+              input: '$interestDocs',
+              as: 'interest',
+              in: '$$interest.label',
+            },
+          },
+        },
+      },
+      {
+        $lookup: {
           from: 'likes',
           let: { userId: '$_id' },
           pipeline: [
