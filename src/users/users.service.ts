@@ -81,7 +81,7 @@ export class UsersService {
         $addFields: {
           interests: {
             $map: {
-              input: '$interestDocs',
+              input: '$interests',
               as: 'interest',
               in: '$$interest.label',
             },
