@@ -7,6 +7,7 @@ import { User, UserDocument } from '../users/schemas/user.schema';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OtpService } from '../otp/otp.service';
 import { ERROR_CODES } from '../core/http/error-codes';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +15,7 @@ export class AuthService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     private jwtService: JwtService,
     private otpService: OtpService,
+    private configService: ConfigService,
   ) {}
 
   async sendOtp(phone: string): Promise<void> {
@@ -62,13 +64,22 @@ export class AuthService {
     }
 
     try {
-      const payload = this.jwtService.verify(refresh_token);
+      const payload = this.jwtService.verify(refresh_token, {
+        secret: this.configService.getOrThrow<string>('jwt.secret_refresh'),
+      });
       const user = await this.userModel.findById(payload.sub);
 
       if (!user) {
         res.clearCookie('refresh_token');
         throw new UnauthorizedException({
           message: 'User not found',
+          code: ERROR_CODES.INVALID_TOKEN,
+        });
+      }
+
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException({
+          message: 'Invalid token type',
           code: ERROR_CODES.INVALID_TOKEN,
         });
       }
@@ -95,9 +106,16 @@ export class AuthService {
     userId: string,
     phone: string,
   ): { access_token: string; refresh_token: string } {
-    const payload = { sub: userId, phone };
-    const access_token = this.jwtService.sign(payload, { expiresIn: '1h' });
-    const refresh_token = this.jwtService.sign(payload, { expiresIn: '7d' });
+    const payload = { sub: userId, phone, type: 'access' };
+    const refresh_payload = { sub: userId, phone, type: 'refresh' };
+    const access_token = this.jwtService.sign(payload, {
+      expiresIn: '1h',
+      secret: this.configService.getOrThrow<string>('jwt.secret'),
+    });
+    const refresh_token = this.jwtService.sign(refresh_payload, {
+      expiresIn: '7d',
+      secret: this.configService.getOrThrow<string>('jwt.secret_refresh'),
+    });
     return { access_token, refresh_token };
   }
 
