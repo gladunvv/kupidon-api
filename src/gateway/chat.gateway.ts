@@ -44,11 +44,14 @@ export class ChatGateway
           throw new Error('No token provided');
         }
 
-        const payload = this.jwtService.verify<{ sub: string; phone?: string }>(
-          token,
-        );
+        const payload = this.jwtService.verify<{
+          sub: string;
+          phone?: string;
+          type: string;
+        }>(token);
         socket.data.userId = payload.sub;
         socket.data.phone = payload.phone;
+        socket.data.type = payload.type;
 
         this.logger.log(
           `Client authenticated: ${socket.id}, userId: ${payload.sub}`,
