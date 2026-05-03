@@ -96,6 +96,9 @@ export class User {
     index: '2dsphere',
   })
   coordinates?: number[];
+
+  @Prop({ type: String, select: false })
+  refreshTokenHash?: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

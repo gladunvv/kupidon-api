@@ -79,7 +79,7 @@ describe('ReferenceController (e2e)', () => {
 
   it('GET /reference/cities/nearby validates numeric query params', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/cities/nearby?lat=55.75&lng=37.61&maxDistance=0',
+      '/reference/cities/nearby?lat=55.75&lng=37.61&limit=0',
     );
 
     expect(response.status).toBe(400);

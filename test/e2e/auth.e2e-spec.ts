@@ -64,6 +64,7 @@ describe('AuthController (e2e)', () => {
         }),
       }),
     );
+    expect(response.body.data.user.refreshTokenHash).toBeUndefined();
     expect(response.headers['set-cookie']).toEqual(
       expect.arrayContaining([expect.stringContaining('refresh_token=')]),
     );
@@ -105,6 +106,7 @@ describe('AuthController (e2e)', () => {
         user: expect.objectContaining({ _id: testIds.user }),
       }),
     );
+    expect(response.body.data.user.refreshTokenHash).toBeUndefined();
   });
 
   it('POST /auth/refresh-token returns 401 without cookie', async () => {
@@ -122,7 +124,9 @@ describe('AuthController (e2e)', () => {
   it('POST /auth/logout clears refresh token cookie', async () => {
     const session = await createAuthorizedSession(getApp());
 
-    const response = await session.agent.post('/auth/logout');
+    const response = await session.agent
+      .post('/auth/logout')
+      .set('Authorization', `Bearer ${session.accessToken}`);
 
     expect(response.status).toBe(201);
     expectSuccessEnvelope(response.body, {

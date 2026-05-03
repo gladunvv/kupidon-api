@@ -6,6 +6,7 @@ import { Public } from '../core/decorators/public.decorator';
 import { ApiCookieAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RequestOtpDto } from './dto/request-otp.dto';
 import { ResponseMessage } from '../core/decorators/response-message.decorator';
+import { CurrentUser } from '../core/decorators/current-user.decorator';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -44,12 +45,14 @@ export class AuthController {
     return this.authService.refreshToken(refreshToken, res);
   }
 
-  @Public()
   @ApiOperation({ summary: 'Clear refresh token cookie' })
   @ResponseMessage('Token cleared successfully')
   @Post('logout')
-  async logout(@Res({ passthrough: true }) res: Response) {
-    await this.authService.logout(res);
+  async logout(
+    @CurrentUser('_id') userId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.authService.logout(userId, res);
     return null;
   }
 }
