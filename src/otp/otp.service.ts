@@ -1,27 +1,33 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { RedisService } from '@liaoliaots/nestjs-redis';
+import { randomInt } from 'crypto';
 
 @Injectable()
 export class OtpService {
   private readonly redis: Redis | null;
+  private readonly ttlSeconds: number;
+  private readonly otpLength: number;
 
-  constructor(private readonly redisService: RedisService) {
+  constructor(
+    private readonly redisService: RedisService,
+    private readonly configService: ConfigService,
+  ) {
     this.redis = this.redisService.getOrThrow();
+    this.ttlSeconds = this.configService.getOrThrow<number>('otp.ttlSeconds');
+    this.otpLength = this.configService.getOrThrow<number>('otp.length');
   }
 
   async generateOtp(phoneNumber: string): Promise<string> {
-    // const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    // mock
-    const otp = '4444';
+    const otp = this.createOtp();
     const key = `otp:${phoneNumber}`;
-    await this.redis.set(key, otp, 'EX', 300); // OTP действует 5 минут
+    await this.redis.set(key, otp, 'EX', this.ttlSeconds);
     return otp;
   }
 
   async sendOtp(phoneNumber: string, otp: string): Promise<void> {
-    // Здесь можно интегрировать сервис SMS-уведомлений (например, Twilio, Firebase, SMS.ru и т. д.)
-    console.log(`Отправка OTP-кода ${otp} на номер ${phoneNumber}`);
+    console.log(`Sending OTP ${otp} to ${phoneNumber}`);
   }
 
   async validateOtp(phoneNumber: string, otp: string): Promise<boolean> {
@@ -32,5 +38,11 @@ export class OtpService {
       return true;
     }
     return false;
+  }
+
+  private createOtp(): string {
+    const min = 10 ** (this.otpLength - 1);
+    const max = 10 ** this.otpLength;
+    return randomInt(min, max).toString();
   }
 }

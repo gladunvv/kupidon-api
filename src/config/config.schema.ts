@@ -41,7 +41,27 @@ export class JwtConfig {
   secret!: string;
 
   @IsString()
-  expiresIn!: string;
+  secret_refresh!: string;
+
+  @IsString()
+  accessExpiresIn!: string;
+
+  @IsString()
+  refreshExpiresIn!: string;
+
+  @IsInt()
+  @Min(1)
+  refreshCookieMaxAge!: number;
+}
+
+export class OtpConfig {
+  @IsInt()
+  @Min(60)
+  ttlSeconds!: number;
+
+  @IsInt()
+  @Min(4)
+  length!: number;
 }
 
 export class EncryptionConfig {
@@ -66,6 +86,10 @@ export class RootConfig {
   @ValidateNested()
   @Type(() => JwtConfig)
   jwt!: JwtConfig;
+
+  @ValidateNested()
+  @Type(() => OtpConfig)
+  otp!: OtpConfig;
 
   @ValidateNested()
   @Type(() => EncryptionConfig)

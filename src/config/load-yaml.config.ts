@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import * as yaml from 'js-yaml';
+import ms from 'ms';
 import { validateConfig } from './validate-config';
 
 export default () => {
@@ -11,7 +12,11 @@ export default () => {
   }
 
   const rawFile = readFileSync(filePath, 'utf8');
-  const parsed = yaml.load(rawFile);
+  const parsed = yaml.load(rawFile) as Record<string, any>;
+
+  if (parsed?.jwt?.refreshExpiresIn) {
+    parsed.jwt.refreshCookieMaxAge = ms(parsed.jwt.refreshExpiresIn);
+  }
 
   return validateConfig(parsed);
 };

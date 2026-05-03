@@ -8,6 +8,8 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OtpService } from '../otp/otp.service';
 import { ERROR_CODES } from '../core/http/error-codes';
 import { ConfigService } from '@nestjs/config';
+import * as bcrypt from 'bcrypt';
+import { JwtConfig } from '../config/config.schema';
 
 @Injectable()
 export class AuthService {
@@ -43,11 +45,14 @@ export class AuthService {
 
     const tokens = this.generateTokens(user._id.toString(), user.phone);
 
+    user.refreshTokenHash = await bcrypt.hash(tokens.refresh_token, 10);
+    await user.save();
+
     this.setRefreshTokenCookie(res, tokens.refresh_token);
 
     return {
       access_token: tokens.access_token,
-      user: user.toObject(),
+      user: this.toSafeUser(user),
     };
   }
 
@@ -65,9 +70,19 @@ export class AuthService {
 
     try {
       const payload = this.jwtService.verify(refresh_token, {
-        secret: this.configService.getOrThrow<string>('jwt.secret_refresh'),
+        secret: this.jwtConfig.secret_refresh,
       });
-      const user = await this.userModel.findById(payload.sub);
+
+      if (payload.type !== 'refresh') {
+        throw new UnauthorizedException({
+          message: 'Invalid token type',
+          code: ERROR_CODES.INVALID_TOKEN,
+        });
+      }
+
+      const user = await this.userModel
+        .findById(payload.sub)
+        .select('+refreshTokenHash');
 
       if (!user) {
         res.clearCookie('refresh_token');
@@ -77,20 +92,32 @@ export class AuthService {
         });
       }
 
-      if (payload.type !== 'refresh') {
+      if (!user.refreshTokenHash) {
+        throw new UnauthorizedException();
+      }
+
+      const isValid = await bcrypt.compare(
+        refresh_token,
+        user.refreshTokenHash,
+      );
+
+      if (!isValid) {
         throw new UnauthorizedException({
-          message: 'Invalid token type',
+          message: 'Invalid refresh token',
           code: ERROR_CODES.INVALID_TOKEN,
         });
       }
 
       const tokens = this.generateTokens(payload.sub, payload.phone);
 
+      user.refreshTokenHash = await bcrypt.hash(tokens.refresh_token, 10);
+      await user.save();
+
       this.setRefreshTokenCookie(res, tokens.refresh_token);
 
       return {
         access_token: tokens.access_token,
-        user: user.toObject(),
+        user: this.toSafeUser(user),
       };
     } catch (error) {
       res.clearCookie('refresh_token');
@@ -109,18 +136,37 @@ export class AuthService {
     const payload = { sub: userId, phone, type: 'access' };
     const refresh_payload = { sub: userId, phone, type: 'refresh' };
     const access_token = this.jwtService.sign(payload, {
-      expiresIn: '1h',
-      secret: this.configService.getOrThrow<string>('jwt.secret'),
+      expiresIn: this.jwtConfig.accessExpiresIn,
+      secret: this.jwtConfig.secret,
     });
     const refresh_token = this.jwtService.sign(refresh_payload, {
-      expiresIn: '7d',
-      secret: this.configService.getOrThrow<string>('jwt.secret_refresh'),
+      expiresIn: this.jwtConfig.refreshExpiresIn,
+      secret: this.jwtConfig.secret_refresh,
     });
     return { access_token, refresh_token };
   }
 
-  async logout(res: Response): Promise<void> {
+  async logout(userId: string, res: Response): Promise<void> {
+    const user = await this.userModel.findByIdAndUpdate(
+      userId,
+      { refreshTokenHash: null },
+      { new: false },
+    );
+
+    if (!user) {
+      throw new UnauthorizedException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
+    }
+
     res.clearCookie('refresh_token');
+  }
+
+  private toSafeUser(user: UserDocument): User {
+    const plainUser = user.toObject();
+    delete plainUser.refreshTokenHash;
+    return plainUser as User;
   }
 
   private setRefreshTokenCookie(res: Response, refreshToken: string): void {
@@ -128,8 +174,12 @@ export class AuthService {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
+      maxAge: this.jwtConfig.refreshCookieMaxAge,
       path: '/',
     });
+  }
+
+  private get jwtConfig(): JwtConfig {
+    return this.configService.getOrThrow<JwtConfig>('jwt', { infer: true });
   }
 }

@@ -364,7 +364,7 @@ class TestAuthService {
     }
   }
 
-  async logout(res: { clearCookie: Function }) {
+  async logout(_userId: string, res: { clearCookie: Function }) {
     res.clearCookie('refresh_token');
   }
 }
