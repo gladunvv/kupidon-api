@@ -17,6 +17,8 @@ import { MessageMongoModule } from './dialog/schemas/message.schema';
 import { EncryptionModule } from './encryption/encryption.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration from './config/load-yaml.config';
+import { RevalidateModule } from 'nestjs-revalidate';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -38,6 +40,13 @@ import configuration from './config/load-yaml.config';
           url: configService.getOrThrow<string>('redis.url'),
         },
       }),
+    }),
+    RevalidateModule.forRoot({
+      etag: {
+        mode: 'weak',
+      },
+      onProjectorError: 'throw',
+      setHeadersOnNotModified: true,
     }),
     AuthModule,
     UsersModule,

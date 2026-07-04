@@ -5,7 +5,7 @@ import { ApiOperation, ApiParam, ApiTags } from '@nestjs/swagger';
 import { GetCitiesQueryDto } from './dto/get-cities-query.dto';
 import { GetInterestsQueryDto } from './dto/get-interests-query.dto';
 import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
-
+import { HttpCache } from 'nestjs-revalidate';
 @ApiTags('Reference')
 @Controller('reference')
 @Public()
@@ -22,6 +22,11 @@ export class ReferenceController {
 
   @ApiOperation({ summary: 'Get cities with optional filters' })
   @Get('cities')
+  @HttpCache({
+    etag: (payload: any) => JSON.stringify(payload.data),
+    cacheControl: 'public, max-age=0, must-revalidate',
+    vary: ['Accept-Encoding'],
+  })
   async getCities(@Query() query?: GetCitiesQueryDto) {
     const cities = await this.referenceService.getCities({
       countryCode: query.country,
@@ -59,6 +64,11 @@ export class ReferenceController {
 
   @ApiOperation({ summary: 'Get relationship goals' })
   @Get('goals')
+  @HttpCache({
+    etag: (payload: any) => JSON.stringify(payload.data),
+    cacheControl: 'public, max-age=0, must-revalidate',
+    vary: ['Accept-Encoding'],
+  })
   async getGoals() {
     const goals = await this.referenceService.getGoals();
     return this.listPayload(goals);
@@ -66,6 +76,11 @@ export class ReferenceController {
 
   @ApiOperation({ summary: 'Get lifestyle categories' })
   @Get('lifestyle-categories')
+  @HttpCache({
+    etag: (payload: any) => JSON.stringify(payload.data),
+    cacheControl: 'public, max-age=0, must-revalidate',
+    vary: ['Accept-Encoding'],
+  })
   async getLifestyleCategories() {
     const categories = await this.referenceService.getLifestyleCategories();
     return this.listPayload(categories);
@@ -83,6 +98,11 @@ export class ReferenceController {
 
   @ApiOperation({ summary: 'Get all lifestyle options' })
   @Get('lifestyle-options')
+  @HttpCache({
+    etag: (payload: any) => JSON.stringify(payload.data),
+    cacheControl: 'public, max-age=0, must-revalidate',
+    vary: ['Accept-Encoding'],
+  })
   async getAllLifestyleOptions() {
     const options = await this.referenceService.getAllLifestyleOptions();
     return this.listPayload(options);
@@ -90,6 +110,11 @@ export class ReferenceController {
 
   @ApiOperation({ summary: 'Get all reference data at once' })
   @Get('all')
+  @HttpCache({
+    etag: (payload: any) => JSON.stringify(payload.data),
+    cacheControl: 'public, max-age=0, must-revalidate',
+    vary: ['Accept-Encoding'],
+  })
   async getAllReferences() {
     const references = await this.referenceService.getAllReferences();
     return {
