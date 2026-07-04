@@ -42,6 +42,7 @@
     "mongoose": "^8.4.0",
     "ms": "^2.1.3",
     "multer": "^2.0.2",
+    "nestjs-revalidate": "^0.2.0",
     "passport-jwt": "^4.0.1",
     "reflect-metadata": "^0.2.0",
     "rxjs": "^7.8.1",
