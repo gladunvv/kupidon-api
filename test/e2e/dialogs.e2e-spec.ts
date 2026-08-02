@@ -1,4 +1,5 @@
 import request from 'supertest';
+import { JwtService } from '@nestjs/jwt';
 import { createAuthorizedSession, testIds } from './test-app';
 import {
   expectErrorEnvelope,
@@ -141,6 +142,24 @@ describe('DialogController (e2e)', () => {
         sender: expect.any(Object),
       }),
     );
+  });
+
+  it('POST /dialogs/:id/messages denies a user outside the dialog', async () => {
+    const accessToken = getApp().get(JwtService).sign({
+      sub: testIds.pendingUser,
+      phone: '+79990003344',
+    });
+
+    const response = await request(getApp().getHttpServer())
+      .post(`/dialogs/${testIds.dialog}/messages`)
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ text: 'Чужое сообщение' });
+
+    expect(response.status).toBe(404);
+    expectErrorEnvelope(response.body, {
+      code: 'NOT_FOUND',
+      message: 'Dialog not found or access denied',
+    });
   });
 
   it('POST /dialogs/:id/messages validates empty and oversized text', async () => {

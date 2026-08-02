@@ -116,16 +116,22 @@ export class DialogService {
   }
 
   async sendMessage(dialogId: string, senderId: string, text: string) {
-    const dialog = await this.dialogModel.findById(dialogId);
+    const dialogObjectId = new Types.ObjectId(dialogId);
+    const senderObjectId = new Types.ObjectId(senderId);
+    const dialog = await this.dialogModel.findOne({
+      _id: dialogObjectId,
+      $or: [{ user1: senderObjectId }, { user2: senderObjectId }],
+      isActive: true,
+    });
     if (!dialog) {
-      throw new NotFoundException('Dialog not found');
+      throw new NotFoundException('Dialog not found or access denied');
     }
 
     const encryptedText = this.encryptionService.encrypt(text);
 
     const message = new this.messageModel({
-      dialogId: new Types.ObjectId(dialogId),
-      sender: new Types.ObjectId(senderId),
+      dialogId: dialogObjectId,
+      sender: senderObjectId,
       status: StatusMessage.SEND,
       ciphertext: encryptedText.ciphertext,
       iv: encryptedText.iv,
