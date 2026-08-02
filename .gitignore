@@ -39,6 +39,9 @@ pids/
 # Coverage directory used by tools like istanbul
 coverage/
 
+# Local project planning
+ROADMAP.md
+
 # nyc test coverage
 .nyc_output/
 

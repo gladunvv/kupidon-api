@@ -483,8 +483,11 @@ class TestDialogService {
   }
 
   async sendMessage(dialogId: string, userId: string, text: string) {
-    if (dialogId !== testIds.dialog) {
-      throw new NotFoundException('Dialog not found');
+    if (
+      dialogId !== testIds.dialog ||
+      ![testIds.user, testIds.matchedUser].includes(userId)
+    ) {
+      throw new NotFoundException('Dialog not found or access denied');
     }
 
     const message = {
