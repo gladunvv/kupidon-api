@@ -34,3 +34,57 @@ describe('DialogService message access', () => {
     expect(messageModel).not.toHaveBeenCalled();
   });
 });
+
+describe('DialogService creation access', () => {
+  const matchId = '507f1f77bcf86cd799439012';
+  const userId = '507f1f77bcf86cd799439011';
+
+  it('does not reveal or create a dialog for a user outside the match', async () => {
+    const dialogModel = { findOne: jest.fn() };
+    const matchModel = { findOne: jest.fn().mockResolvedValue(null) };
+    const service = new DialogService(
+      dialogModel as never,
+      {} as never,
+      matchModel as never,
+      {} as never,
+    );
+
+    await expect(service.createDialog(matchId, userId)).rejects.toThrow(
+      new NotFoundException('Match not found or access denied'),
+    );
+    expect(matchModel.findOne).toHaveBeenCalledWith({
+      _id: new Types.ObjectId(matchId),
+      $or: [
+        { user1: new Types.ObjectId(userId) },
+        { user2: new Types.ObjectId(userId) },
+      ],
+    });
+    expect(dialogModel.findOne).not.toHaveBeenCalled();
+  });
+
+  it('returns the existing dialog for a repeated request', async () => {
+    const match = {
+      user1: new Types.ObjectId(userId),
+      user2: new Types.ObjectId('507f191e810c19729de860ea'),
+    };
+    const existingDialog = { _id: new Types.ObjectId(), matchId };
+    const dialogModel = Object.assign(jest.fn(), {
+      findOne: jest.fn().mockResolvedValue(existingDialog),
+    });
+    const matchModel = { findOne: jest.fn().mockResolvedValue(match) };
+    const service = new DialogService(
+      dialogModel as never,
+      {} as never,
+      matchModel as never,
+      {} as never,
+    );
+
+    await expect(service.createDialog(matchId, userId)).resolves.toBe(
+      existingDialog,
+    );
+    expect(dialogModel.findOne).toHaveBeenCalledWith({
+      matchId: new Types.ObjectId(matchId),
+    });
+    expect(dialogModel).not.toHaveBeenCalled();
+  });
+});

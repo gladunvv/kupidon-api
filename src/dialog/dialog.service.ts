@@ -160,13 +160,26 @@ export class DialogService {
     };
   }
 
-  async createDialog(matchId: string) {
-    const match = await this.matchModel.findById(matchId);
+  async createDialog(matchId: string, userId: string) {
+    const matchObjectId = new Types.ObjectId(matchId);
+    const userObjectId = new Types.ObjectId(userId);
+    const match = await this.matchModel.findOne({
+      _id: matchObjectId,
+      $or: [{ user1: userObjectId }, { user2: userObjectId }],
+    });
     if (!match) {
-      throw new NotFoundException('Match not found');
+      throw new NotFoundException('Match not found or access denied');
     }
+
+    const existingDialog = await this.dialogModel.findOne({
+      matchId: matchObjectId,
+    });
+    if (existingDialog) {
+      return existingDialog;
+    }
+
     const dialog = new this.dialogModel({
-      matchId: new Types.ObjectId(matchId),
+      matchId: matchObjectId,
       user1: match.user1,
       user2: match.user2,
     });

@@ -41,6 +41,40 @@ describe('DialogController (e2e)', () => {
     );
   });
 
+  it('POST /dialogs/create is idempotent', async () => {
+    const { accessToken } = await createAuthorizedSession(getApp());
+    const createDialog = () =>
+      request(getApp().getHttpServer())
+        .post('/dialogs/create')
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ matchId: testIds.match });
+
+    const firstResponse = await createDialog();
+    const secondResponse = await createDialog();
+
+    expect(firstResponse.status).toBe(201);
+    expect(secondResponse.status).toBe(201);
+    expect(secondResponse.body.data._id).toBe(firstResponse.body.data._id);
+  });
+
+  it('POST /dialogs/create denies a user outside the match', async () => {
+    const accessToken = getApp().get(JwtService).sign({
+      sub: testIds.pendingUser,
+      phone: '+79990003344',
+    });
+
+    const response = await request(getApp().getHttpServer())
+      .post('/dialogs/create')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ matchId: testIds.match });
+
+    expect(response.status).toBe(404);
+    expectErrorEnvelope(response.body, {
+      code: 'NOT_FOUND',
+      message: 'Match not found or access denied',
+    });
+  });
+
   it('POST /dialogs/create validates matchId', async () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
@@ -62,7 +96,10 @@ describe('DialogController (e2e)', () => {
       .send({ matchId: testIds.missingMatch });
 
     expect(response.status).toBe(404);
-    expectErrorEnvelope(response.body, { code: 'NOT_FOUND' });
+    expectErrorEnvelope(response.body, {
+      code: 'NOT_FOUND',
+      message: 'Match not found or access denied',
+    });
   });
 
   it('GET /dialogs/:id returns dialog details', async () => {
