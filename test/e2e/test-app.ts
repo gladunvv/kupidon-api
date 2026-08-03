@@ -450,9 +450,12 @@ class TestDialogService {
     ];
   }
 
-  async createDialog(matchId: string) {
-    if (matchId !== testIds.match) {
-      throw new NotFoundException('Match not found');
+  async createDialog(matchId: string, userId: string) {
+    if (
+      matchId !== testIds.match ||
+      ![testIds.user, testIds.matchedUser].includes(userId)
+    ) {
+      throw new NotFoundException('Match not found or access denied');
     }
 
     return {

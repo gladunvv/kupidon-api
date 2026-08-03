@@ -31,8 +31,11 @@ export class DialogController {
   @ApiOperation({ summary: 'Create dialog from match' })
   @ResponseMessage('Dialog created successfully')
   @Post('create')
-  async createDialog(@Body() dto: CreateDialogDto) {
-    return await this.dialogService.createDialog(dto.matchId);
+  async createDialog(
+    @Body() dto: CreateDialogDto,
+    @CurrentUser('_id') userId: string,
+  ) {
+    return this.dialogService.createDialog(dto.matchId, userId);
   }
 
   @UseGuards(JwtAuthGuard)
