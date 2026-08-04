@@ -171,22 +171,18 @@ export class DialogService {
       throw new NotFoundException('Match not found or access denied');
     }
 
-    const existingDialog = await this.dialogModel.findOne({
-      matchId: matchObjectId,
-    });
-    if (existingDialog) {
-      return existingDialog;
-    }
-
-    const dialog = new this.dialogModel({
-      matchId: matchObjectId,
-      user1: match.user1,
-      user2: match.user2,
-    });
-
-    await dialog.save();
-
-    return dialog;
+    return this.dialogModel.findOneAndUpdate(
+      { matchId: matchObjectId },
+      {
+        $setOnInsert: {
+          matchId: matchObjectId,
+          user1: match.user1,
+          user2: match.user2,
+          isActive: true,
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
   }
 
   async getUserDialogs(userId: string) {

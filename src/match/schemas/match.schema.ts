@@ -19,7 +19,12 @@ export class Match {
   updated_at: Date;
 }
 
-const MatchSchema = SchemaFactory.createForClass(Match);
+export const MatchSchema = SchemaFactory.createForClass(Match);
+
+MatchSchema.index(
+  { user1: 1, user2: 1 },
+  { unique: true, name: 'uniq_match_pair' },
+);
 
 @Module({
   imports: [

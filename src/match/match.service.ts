@@ -29,20 +29,16 @@ export class MatchService {
     const userObjectId = new Types.ObjectId(userId);
     const likedUserObjectId = new Types.ObjectId(likedUserId);
 
-    const existingLike = await this.likeModel.findOne({
-      userId: userObjectId,
-      likedUserId: likedUserObjectId,
-    });
-
-    if (existingLike) {
-      return null;
-    }
-
-    const like = new this.likeModel({
-      userId: userObjectId,
-      likedUserId: likedUserObjectId,
-    });
-    await like.save();
+    await this.likeModel.updateOne(
+      { userId: userObjectId, likedUserId: likedUserObjectId },
+      {
+        $setOnInsert: {
+          userId: userObjectId,
+          likedUserId: likedUserObjectId,
+        },
+      },
+      { upsert: true },
+    );
 
     const reciprocalLike = await this.likeModel.findOne({
       userId: likedUserObjectId,
@@ -60,35 +56,36 @@ export class MatchService {
     userObjectId: Types.ObjectId,
     otherUserId: Types.ObjectId,
   ) {
-    const existingMatch = await this.matchModel.findOne({
-      $or: [
-        { user1: userObjectId, user2: otherUserId },
-        { user1: otherUserId, user2: userObjectId },
-      ],
-    });
+    const [user1, user2] = this.canonicalUserPair(userObjectId, otherUserId);
+    const match = await this.matchModel.findOneAndUpdate(
+      { user1, user2 },
+      { $setOnInsert: { user1, user2 } },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
 
-    if (existingMatch) {
-      const existingDialog = await this.dialogModel.findOne({
-        matchId: existingMatch._id,
-      });
-      return { match: existingMatch, dialog: existingDialog };
-    }
-
-    const match = new this.matchModel({
-      user1: userObjectId,
-      user2: otherUserId,
-    });
-    await match.save();
-
-    const dialog = new this.dialogModel({
-      matchId: new Types.ObjectId(match._id.toString()),
-      user1: userObjectId,
-      user2: otherUserId,
-      isActive: true,
-    });
-    await dialog.save();
+    const dialog = await this.dialogModel.findOneAndUpdate(
+      { matchId: match._id },
+      {
+        $setOnInsert: {
+          matchId: match._id,
+          user1,
+          user2,
+          isActive: true,
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
 
     return { match, dialog };
+  }
+
+  private canonicalUserPair(
+    firstUserId: Types.ObjectId,
+    secondUserId: Types.ObjectId,
+  ): [Types.ObjectId, Types.ObjectId] {
+    return firstUserId.toString() < secondUserId.toString()
+      ? [firstUserId, secondUserId]
+      : [secondUserId, firstUserId];
   }
 
   async getUserMatches(userId: string) {

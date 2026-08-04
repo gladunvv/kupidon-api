@@ -40,7 +40,7 @@ describe('DialogService creation access', () => {
   const userId = '507f1f77bcf86cd799439011';
 
   it('does not reveal or create a dialog for a user outside the match', async () => {
-    const dialogModel = { findOne: jest.fn() };
+    const dialogModel = { findOneAndUpdate: jest.fn() };
     const matchModel = { findOne: jest.fn().mockResolvedValue(null) };
     const service = new DialogService(
       dialogModel as never,
@@ -59,7 +59,7 @@ describe('DialogService creation access', () => {
         { user2: new Types.ObjectId(userId) },
       ],
     });
-    expect(dialogModel.findOne).not.toHaveBeenCalled();
+    expect(dialogModel.findOneAndUpdate).not.toHaveBeenCalled();
   });
 
   it('returns the existing dialog for a repeated request', async () => {
@@ -68,9 +68,9 @@ describe('DialogService creation access', () => {
       user2: new Types.ObjectId('507f191e810c19729de860ea'),
     };
     const existingDialog = { _id: new Types.ObjectId(), matchId };
-    const dialogModel = Object.assign(jest.fn(), {
-      findOne: jest.fn().mockResolvedValue(existingDialog),
-    });
+    const dialogModel = {
+      findOneAndUpdate: jest.fn().mockResolvedValue(existingDialog),
+    };
     const matchModel = { findOne: jest.fn().mockResolvedValue(match) };
     const service = new DialogService(
       dialogModel as never,
@@ -82,9 +82,17 @@ describe('DialogService creation access', () => {
     await expect(service.createDialog(matchId, userId)).resolves.toBe(
       existingDialog,
     );
-    expect(dialogModel.findOne).toHaveBeenCalledWith({
-      matchId: new Types.ObjectId(matchId),
-    });
-    expect(dialogModel).not.toHaveBeenCalled();
+    expect(dialogModel.findOneAndUpdate).toHaveBeenCalledWith(
+      { matchId: new Types.ObjectId(matchId) },
+      {
+        $setOnInsert: {
+          matchId: new Types.ObjectId(matchId),
+          user1: match.user1,
+          user2: match.user2,
+          isActive: true,
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
   });
 });
