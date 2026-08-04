@@ -9,7 +9,7 @@ export type DialogDocument = Dialog & Document;
   timestamps: { createdAt: 'created_at', updatedAt: 'updated_at' },
 })
 export class Dialog {
-  @Prop({ type: Types.ObjectId, ref: 'Match' })
+  @Prop({ type: Types.ObjectId, ref: 'Match', required: true })
   matchId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User' })
@@ -25,7 +25,9 @@ export class Dialog {
   isActive: boolean;
 }
 
-const DialogSchema = SchemaFactory.createForClass(Dialog);
+export const DialogSchema = SchemaFactory.createForClass(Dialog);
+
+DialogSchema.index({ matchId: 1 }, { unique: true, name: 'uniq_dialog_match' });
 
 @Module({
   imports: [
