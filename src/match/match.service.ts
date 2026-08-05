@@ -56,6 +56,10 @@ export class MatchService {
     userObjectId: Types.ObjectId,
     otherUserId: Types.ObjectId,
   ) {
+    // Both writes are idempotent and protected by unique indexes. If creating
+    // the dialog fails after the match upsert, repeating the like repairs the
+    // incomplete pair without creating another match or dialog. This keeps
+    // local standalone MongoDB supported without requiring transactions.
     const [user1, user2] = this.canonicalUserPair(userObjectId, otherUserId);
     const match = await this.matchModel.findOneAndUpdate(
       { user1, user2 },
