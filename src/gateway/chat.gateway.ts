@@ -45,13 +45,21 @@ export class ChatGateway
         }
 
         const payload = this.jwtService.verify<{
-          sub: string;
+          sub?: string;
           phone?: string;
-          type: string;
+          type?: string;
         }>(token);
+
+        if (
+          payload.type !== 'access' ||
+          typeof payload.sub !== 'string' ||
+          payload.sub.length === 0
+        ) {
+          throw new Error('Invalid access token');
+        }
+
         socket.data.userId = payload.sub;
         socket.data.phone = payload.phone;
-        socket.data.type = payload.type;
 
         this.logger.log(
           `Client authenticated: ${socket.id}, userId: ${payload.sub}`,
