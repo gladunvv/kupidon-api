@@ -3,6 +3,7 @@ import {
   ArrayNotEmpty,
   IsArray,
   IsInt,
+  IsOptional,
   IsString,
   Matches,
   Min,
@@ -62,6 +63,36 @@ export class OtpConfig {
   @IsInt()
   @Min(4)
   length!: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  cooldownSeconds?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  requestWindowSeconds?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxRequestsPerWindow?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxRequestsPerIpWindow?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  maxVerifyAttempts?: number;
+
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  blockSeconds?: number;
 }
 
 export class EncryptionConfig {
