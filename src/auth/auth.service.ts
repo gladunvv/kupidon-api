@@ -20,8 +20,8 @@ export class AuthService {
     private configService: ConfigService,
   ) {}
 
-  async sendOtp(phone: string): Promise<void> {
-    const otp = await this.otpService.generateOtp(phone);
+  async sendOtp(phone: string, clientIp: string): Promise<void> {
+    const otp = await this.otpService.generateOtp(phone, clientIp);
     await this.otpService.sendOtp(phone, otp);
   }
 

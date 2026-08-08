@@ -17,8 +17,9 @@ export class AuthController {
   @ApiOperation({ summary: 'Request OTP by phone number' })
   @ResponseMessage('OTP sent successfully')
   @Post('request-otp')
-  async requestOtp(@Body() dto: RequestOtpDto) {
-    return await this.authService.sendOtp(dto.phone);
+  async requestOtp(@Body() dto: RequestOtpDto, @Req() req: Request) {
+    const clientIp = req.ip || req.socket.remoteAddress || 'unknown';
+    return this.authService.sendOtp(dto.phone, clientIp);
   }
 
   @Public()
