@@ -121,6 +121,20 @@ describe('AuthController (e2e)', () => {
     });
   });
 
+  it('POST /auth/refresh-token does not expose verification details', async () => {
+    const response = await request(getApp().getHttpServer())
+      .post('/auth/refresh-token')
+      .set('Cookie', 'refresh_token=invalid-token');
+
+    expect(response.status).toBe(401);
+    expectErrorEnvelope(response.body, {
+      code: 'INVALID_TOKEN',
+      message: 'Invalid refresh token',
+    });
+    expect(response.body.error.details).toBeUndefined();
+    expect(JSON.stringify(response.body)).not.toContain('jwt malformed');
+  });
+
   it('POST /auth/logout clears refresh token cookie', async () => {
     const session = await createAuthorizedSession(getApp());
 
