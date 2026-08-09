@@ -17,6 +17,6 @@ export const exceptionFactory = (errors: ValidationError[]) => {
 
 export const validationPipe = new ValidationPipe({
   transform: true,
-  enableDebugMessages: true,
+  enableDebugMessages: false,
   exceptionFactory,
 });

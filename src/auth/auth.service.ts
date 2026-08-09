@@ -119,12 +119,11 @@ export class AuthService {
         access_token: tokens.access_token,
         user: this.toSafeUser(user),
       };
-    } catch (error) {
+    } catch {
       res.clearCookie('refresh_token');
       throw new UnauthorizedException({
         message: 'Invalid refresh token',
         code: ERROR_CODES.INVALID_TOKEN,
-        details: error.message,
       });
     }
   }

@@ -37,7 +37,7 @@ export class MulterExceptionFilter implements ExceptionFilter {
         errorCode = ERROR_CODES.UNEXPECTED_FILE;
         break;
       default:
-        message = exception.message || 'File upload error';
+        message = 'File upload error';
     }
 
     const errorResponse: ApiResponse = {
