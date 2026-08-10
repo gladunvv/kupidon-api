@@ -18,7 +18,10 @@
     "test:cov": "jest --config ./test/jest-e2e.json --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
-    "seed": "ts-node -r tsconfig-paths/register src/seed/seed.command.ts"
+    "seed": "ts-node -r tsconfig-paths/register src/seed/seed.command.ts",
+    "migrate:relationships:audit": "ts-node -r tsconfig-paths/register src/migrations/unique-relationships.command.ts",
+    "migrate:relationships:apply": "ts-node -r tsconfig-paths/register src/migrations/unique-relationships.command.ts --apply",
+    "migrate:relationships:rollback": "ts-node -r tsconfig-paths/register src/migrations/unique-relationships.command.ts --rollback-indexes"
   },
   "dependencies": {
     "@liaoliaots/nestjs-redis": "^10.0.0",
@@ -39,6 +42,7 @@
     "class-validator": "^0.14.1",
     "cookie-parser": "^1.4.7",
     "ioredis": "^5.5.0",
+    "mongodb": "6.20.0",
     "mongoose": "^8.4.0",
     "ms": "^2.1.3",
     "multer": "^2.0.2",
