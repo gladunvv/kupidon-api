@@ -12,8 +12,21 @@ redis:
   url: redis://127.0.0.1:6379
 
 jwt:
-  secret: change-me
-  expiresIn: 7d
+  secret: change-this-access-secret
+  secret_refresh: change-this-refresh-secret
+  accessExpiresIn: 1h
+  refreshExpiresIn: 7d
+
+otp:
+  ttlSeconds: 300
+  length: 4
+  cooldownSeconds: 60
+  requestWindowSeconds: 3600
+  maxRequestsPerWindow: 5
+  maxRequestsPerIpWindow: 30
+  maxVerifyAttempts: 5
+  blockSeconds: 900
 
 encryption:
-  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcddd
+  # 32-byte key encoded as 64 hexadecimal characters. Replace in production.
+  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
