@@ -1,11 +1,9 @@
-import * as bcrypt from 'bcrypt';
+import { createHash } from 'crypto';
 import { AuthService } from './auth.service';
 import { ERROR_CODES } from '../core/http/error-codes';
 
-jest.mock('bcrypt', () => ({
-  hash: jest.fn().mockResolvedValue('hashed-token'),
-  compare: jest.fn(),
-}));
+const sha256 = (value: string) =>
+  createHash('sha256').update(value).digest('hex');
 
 const jwtConfig = {
   secret: 'access-secret',
@@ -25,11 +23,6 @@ const makeConfigService = () => ({
 });
 
 describe('AuthService', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    (bcrypt.hash as jest.Mock).mockResolvedValue('hashed-token');
-  });
-
   describe('verifyOtp', () => {
     it('rejects an invalid OTP without touching the user collection', async () => {
       const otpService = { validateOtp: jest.fn().mockResolvedValue(false) };
@@ -92,7 +85,7 @@ describe('AuthService', () => {
       expect(result.access_token).toBe('access-token');
       expect(result.user).not.toHaveProperty('refreshTokenHash');
       expect(existingUser.save).toHaveBeenCalled();
-      expect(bcrypt.hash).toHaveBeenCalledWith('refresh-token', 10);
+      expect(existingUser.refreshTokenHash).toBe(sha256('refresh-token'));
       expect(res.cookie).toHaveBeenCalledWith(
         'refresh_token',
         'refresh-token',
@@ -246,13 +239,12 @@ describe('AuthService', () => {
           .fn()
           .mockReturnValue({ sub: 'user-1', phone: '+1', type: 'refresh' }),
       };
-      const storedUser = { refreshTokenHash: 'current-hash' };
+      const storedUser = { refreshTokenHash: sha256('current-token') };
       const userModel = {
         findById: jest.fn().mockReturnValue({
           select: jest.fn().mockResolvedValue(storedUser),
         }),
       };
-      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
       const service = new AuthService(
         userModel as never,
         jwtService as never,
@@ -308,7 +300,7 @@ describe('AuthService', () => {
       };
       const storedUser = {
         phone: '+1',
-        refreshTokenHash: 'current-hash',
+        refreshTokenHash: sha256('current-token'),
         save: jest.fn().mockResolvedValue(undefined),
         toObject: jest.fn().mockImplementation(function (this: any) {
           return { phone: this.phone, refreshTokenHash: this.refreshTokenHash };
@@ -319,7 +311,6 @@ describe('AuthService', () => {
           select: jest.fn().mockResolvedValue(storedUser),
         }),
       };
-      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       const res = makeRes();
       const service = new AuthService(
         userModel as never,
@@ -333,7 +324,7 @@ describe('AuthService', () => {
       expect(result.access_token).toBe('new-access-token');
       expect(result.user).not.toHaveProperty('refreshTokenHash');
       expect(storedUser.save).toHaveBeenCalled();
-      expect(bcrypt.hash).toHaveBeenCalledWith('new-refresh-token', 10);
+      expect(storedUser.refreshTokenHash).toBe(sha256('new-refresh-token'));
       expect(res.cookie).toHaveBeenCalledWith(
         'refresh_token',
         'new-refresh-token',

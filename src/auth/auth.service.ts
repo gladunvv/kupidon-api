@@ -8,7 +8,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { OtpService } from '../otp/otp.service';
 import { ERROR_CODES } from '../core/http/error-codes';
 import { ConfigService } from '@nestjs/config';
-import * as bcrypt from 'bcrypt';
+import { createHash, timingSafeEqual } from 'crypto';
 import { JwtConfig } from '../config/config.schema';
 
 @Injectable()
@@ -45,7 +45,7 @@ export class AuthService {
 
     const tokens = this.generateTokens(user._id.toString(), user.phone);
 
-    user.refreshTokenHash = await bcrypt.hash(tokens.refresh_token, 10);
+    user.refreshTokenHash = this.hashRefreshToken(tokens.refresh_token);
     await user.save();
 
     this.setRefreshTokenCookie(res, tokens.refresh_token);
@@ -96,7 +96,7 @@ export class AuthService {
         throw new UnauthorizedException();
       }
 
-      const isValid = await bcrypt.compare(
+      const isValid = this.refreshTokenMatches(
         refresh_token,
         user.refreshTokenHash,
       );
@@ -110,7 +110,7 @@ export class AuthService {
 
       const tokens = this.generateTokens(payload.sub, payload.phone);
 
-      user.refreshTokenHash = await bcrypt.hash(tokens.refresh_token, 10);
+      user.refreshTokenHash = this.hashRefreshToken(tokens.refresh_token);
       await user.save();
 
       this.setRefreshTokenCookie(res, tokens.refresh_token);
@@ -180,5 +180,17 @@ export class AuthService {
 
   private get jwtConfig(): JwtConfig {
     return this.configService.getOrThrow<JwtConfig>('jwt', { infer: true });
+  }
+
+  private hashRefreshToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  private refreshTokenMatches(token: string, storedHash: string): boolean {
+    const candidate = Buffer.from(this.hashRefreshToken(token), 'hex');
+    const stored = Buffer.from(storedHash, 'hex');
+    return (
+      candidate.length === stored.length && timingSafeEqual(candidate, stored)
+    );
   }
 }
