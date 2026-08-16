@@ -127,6 +127,20 @@ npm run migrate:relationships:audit  # контрольный результат
 npm run test:e2e -- --runInBand
 ```
 
+### Integration-тесты
+
+`npm run test:integration` проверяет схемы, unique-индексы, агрегации, TTL и
+одноразовость OTP, ротацию refresh-токена и конкурентное создание мэтча против
+настоящих MongoDB и Redis — без моков инфраструктуры. Нужны локально запущенные
+MongoDB на `127.0.0.1:27017` и Redis на `127.0.0.1:6379` (та же пара, что и для
+обычного запуска приложения). Тесты используют отдельную БД
+`kupidon_integration_test` и Redis DB `15`, чтобы не задевать dev-данные;
+переопределить можно через `INTEGRATION_MONGODB_URI` и `INTEGRATION_REDIS_URL`.
+
+```bash
+npm run test:integration
+```
+
 ## Структура проекта
 
 ```text
