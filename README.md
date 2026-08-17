@@ -80,8 +80,9 @@ npm run start:dev     # запуск в watch-режиме
 npm run build         # сборка проекта
 npm run start:prod    # запуск собранной версии
 
-npm run test          # unit/integration tests
-npm run test:e2e      # e2e tests
+npm run test          # unit-тесты
+npm run test:contract # contract-тесты HTTP-слоя (моки инфраструктуры)
+npm run test:integration # integration-тесты на настоящих MongoDB и Redis
 npm run test:cov      # coverage
 
 npm run lint          # eslint
@@ -119,23 +120,39 @@ npm run migrate:relationships:audit  # контрольный результат
 
 ## Тестирование
 
-В проекте есть e2e-покрытие HTTP endpoint'ов через `Jest` и `Supertest`.
+В проекте три независимых набора тестов, каждый со своим назначением и своей
+командой.
 
-Запуск:
+### Unit-тесты
+
+`src/**/*.spec.ts`. Проверяют отдельные сервисы в изоляции: инварианты бизнес-
+логики, обработку ошибок, граничные случаи. Внешние зависимости замоканы.
 
 ```bash
-npm run test:e2e -- --runInBand
+npm run test
+```
+
+### Contract-тесты
+
+`test/contract/*.contract-spec.ts`. Поднимают реальный Nest HTTP-слой (guards,
+pipes, filters, interceptors) через `Supertest`, но с замоканными сервисами
+данных — реальные MongoDB и Redis не нужны. Проверяют контракт эндпоинтов:
+статусы, форму ответа, авторизацию, валидацию DTO.
+
+```bash
+npm run test:contract -- --runInBand
 ```
 
 ### Integration-тесты
 
-`npm run test:integration` проверяет схемы, unique-индексы, агрегации, TTL и
-одноразовость OTP, ротацию refresh-токена и конкурентное создание мэтча против
-настоящих MongoDB и Redis — без моков инфраструктуры. Нужны локально запущенные
-MongoDB на `127.0.0.1:27017` и Redis на `127.0.0.1:6379` (та же пара, что и для
-обычного запуска приложения). Тесты используют отдельную БД
-`kupidon_integration_test` и Redis DB `15`, чтобы не задевать dev-данные;
-переопределить можно через `INTEGRATION_MONGODB_URI` и `INTEGRATION_REDIS_URL`.
+`test/integration/*.integration-spec.ts`. Работают напрямую с настоящими
+MongoDB и Redis, без моков инфраструктуры: unique-индексы, агрегации, TTL и
+одноразовость OTP, ротация refresh-токена, конкурентное создание мэтча. Нужны
+локально запущенные MongoDB на `127.0.0.1:27017` и Redis на `127.0.0.1:6379`
+(та же пара, что и для обычного запуска приложения). Тесты используют
+отдельную БД `kupidon_integration_test` и Redis DB `15`, чтобы не задевать
+dev-данные; переопределить можно через `INTEGRATION_MONGODB_URI` и
+`INTEGRATION_REDIS_URL`.
 
 ```bash
 npm run test:integration

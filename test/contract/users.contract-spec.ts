@@ -6,7 +6,7 @@ import {
 } from './support/assertions';
 import { setupE2EApp } from './support/setup';
 
-describe('UsersController (e2e)', () => {
+describe('UsersController (contract)', () => {
   const { getApp } = setupE2EApp();
 
   it('GET /users returns 401 without auth', async () => {

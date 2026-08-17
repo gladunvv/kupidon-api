@@ -11,7 +11,7 @@ import {
 } from './support/assertions';
 import { setupE2EApp } from './support/setup';
 
-describe('AuthController (e2e)', () => {
+describe('AuthController (contract)', () => {
   const { getApp } = setupE2EApp();
 
   it('POST /auth/request-otp sends OTP', async () => {

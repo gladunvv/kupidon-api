@@ -7,7 +7,7 @@ import {
 } from './support/assertions';
 import { setupE2EApp } from './support/setup';
 
-describe('DialogController (e2e)', () => {
+describe('DialogController (contract)', () => {
   const { getApp } = setupE2EApp();
 
   it('GET /dialogs returns dialog list', async () => {
