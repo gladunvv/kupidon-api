@@ -6,7 +6,7 @@ import {
 } from './support/assertions';
 import { setupE2EApp } from './support/setup';
 
-describe('UploadController (e2e)', () => {
+describe('UploadController (contract)', () => {
   const { getApp } = setupE2EApp();
 
   it('GET /upload/photos returns 401 without auth', async () => {

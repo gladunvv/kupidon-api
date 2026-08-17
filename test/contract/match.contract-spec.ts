@@ -6,7 +6,7 @@ import {
 } from './support/assertions';
 import { setupE2EApp } from './support/setup';
 
-describe('MatchController (e2e)', () => {
+describe('MatchController (contract)', () => {
   const { getApp } = setupE2EApp();
 
   it('POST /match/like creates simple like', async () => {

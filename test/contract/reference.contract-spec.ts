@@ -3,7 +3,7 @@ import { testIds } from './test-app';
 import { expectErrorEnvelope, expectMeta } from './support/assertions';
 import { setupE2EApp } from './support/setup';
 
-describe('ReferenceController (e2e)', () => {
+describe('ReferenceController (contract)', () => {
   const { getApp } = setupE2EApp();
 
   it('GET /reference/cities returns filtered cities without auth', async () => {
