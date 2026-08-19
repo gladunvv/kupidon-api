@@ -16,7 +16,7 @@
     "lint:ci": "eslint \"{src,apps,libs,test}/**/*.ts\"",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:cov": "jest --config ./test/jest-contract.json --coverage",
+    "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:contract": "jest --config ./test/jest-contract.json",
     "test:integration": "jest --config ./test/jest-integration.json --runInBand",
@@ -98,6 +98,44 @@
       "**/*.(t|j)s"
     ],
     "coverageDirectory": "../coverage",
-    "testEnvironment": "node"
+    "testEnvironment": "node",
+    "coverageThreshold": {
+      "./src/auth/auth.service.ts": {
+        "statements": 97,
+        "branches": 100,
+        "functions": 90,
+        "lines": 97
+      },
+      "./src/otp/otp.service.ts": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "./src/encryption/encryption.service.ts": {
+        "statements": 100,
+        "branches": 100,
+        "functions": 100,
+        "lines": 100
+      },
+      "./src/match/match.service.ts": {
+        "statements": 75,
+        "branches": 36,
+        "functions": 62,
+        "lines": 73
+      },
+      "./src/dialog/dialog.service.ts": {
+        "statements": 51,
+        "branches": 33,
+        "functions": 30,
+        "lines": 50
+      },
+      "./src/upload/upload.service.ts": {
+        "statements": 89,
+        "branches": 75,
+        "functions": 85,
+        "lines": 89
+      }
+    }
   }
 }
