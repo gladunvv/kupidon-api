@@ -6,3 +6,8 @@ build
 coverage
 *.log
 .DS_Store
+.env
+.env.*
+config.yaml
+uploads
+test
