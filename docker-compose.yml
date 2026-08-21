@@ -1,0 +1,55 @@
+services:
+  mongodb:
+    image: mongo:7
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand('ping').ok"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  redis:
+    image: redis:7
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - '8000:8000'
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./config.docker.yaml:/app/config.yaml:ro
+      - uploads-data:/app/uploads
+    healthcheck:
+      # Stand-in until OPS-03 adds a dedicated /health endpoint; /docs-json
+      # only responds once Nest has finished bootstrapping all modules,
+      # including the Mongo/Redis connections.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8000/docs-json"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+
+volumes:
+  mongodb-data:
+  redis-data:
+  uploads-data:
