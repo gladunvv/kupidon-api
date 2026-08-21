@@ -57,6 +57,27 @@ API по умолчанию поднимается на:
 http://localhost:8000
 ```
 
+### Альтернатива: Docker Compose
+
+Не нужны локально установленные MongoDB и Redis — одной командой поднимаются
+API, MongoDB и Redis вместе:
+
+```bash
+docker compose up --build
+```
+
+API стартует только после того, как MongoDB и Redis пройдут собственный
+healthcheck (`depends_on: condition: service_healthy`), а не просто после
+запуска их контейнеров. Конфигурация берётся из `config.docker.yaml`
+(трекается в Git, содержит только тестовые значения — не для реального
+деплоя) и монтируется в контейнер как `config.yaml`. Данные MongoDB, Redis и
+загруженные фото сохраняются в именованных volume между перезапусками.
+
+```bash
+docker compose down        # остановить, данные сохраняются
+docker compose down -v     # остановить и удалить volume с данными
+```
+
 ## Swagger и Postman
 
 После запуска приложения доступны:

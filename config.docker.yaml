@@ -1,0 +1,33 @@
+app:
+  port: 8000
+  cors:
+    allowedOrigins:
+      - http://localhost:5173
+      - http://localhost:5174
+
+mongodb:
+  uri: mongodb://mongodb:27017/datingapp
+
+redis:
+  url: redis://redis:6379
+
+jwt:
+  secret: change-this-access-secret
+  secret_refresh: change-this-refresh-secret
+  accessExpiresIn: 1h
+  refreshExpiresIn: 7d
+
+otp:
+  ttlSeconds: 300
+  length: 4
+  cooldownSeconds: 60
+  requestWindowSeconds: 3600
+  maxRequestsPerWindow: 5
+  maxRequestsPerIpWindow: 30
+  maxVerifyAttempts: 5
+  blockSeconds: 900
+
+encryption:
+  # 32-byte key encoded as 64 hexadecimal characters. Only for local
+  # docker-compose spin-up — replace before any real deployment.
+  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
