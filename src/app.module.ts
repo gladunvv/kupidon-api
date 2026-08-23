@@ -15,6 +15,7 @@ import { MatchMongoModule } from './match/schemas/match.schema';
 import { DialogMongoModule } from './dialog/schemas/dialog.schema';
 import { MessageMongoModule } from './dialog/schemas/message.schema';
 import { EncryptionModule } from './encryption/encryption.module';
+import { HealthModule } from './health/health.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration from './config/load-yaml.config';
 import { RevalidateModule } from 'nestjs-revalidate';
@@ -59,6 +60,7 @@ import { RevalidateModule } from 'nestjs-revalidate';
     DialogMongoModule,
     MessageMongoModule,
     EncryptionModule,
+    HealthModule,
   ],
   controllers: [AppController],
   providers: [AppService],
