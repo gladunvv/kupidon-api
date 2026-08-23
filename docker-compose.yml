@@ -40,10 +40,7 @@ services:
       - ./config.docker.yaml:/app/config.yaml:ro
       - uploads-data:/app/uploads
     healthcheck:
-      # Stand-in until OPS-03 adds a dedicated /health endpoint; /docs-json
-      # only responds once Nest has finished bootstrapping all modules,
-      # including the Mongo/Redis connections.
-      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8000/docs-json"]
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8000/health/ready"]
       interval: 10s
       timeout: 5s
       retries: 5

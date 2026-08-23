@@ -1,3 +1,4 @@
+import { Logger } from '@nestjs/common';
 import { NestFactory, Reflector } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { validationPipe } from './core/pipes/validation.pipe';
@@ -10,6 +11,15 @@ import { join } from 'path';
 import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
+import { ShutdownService } from './health/shutdown.service';
+
+// Time to let the orchestrator notice the readiness flip (via the next
+// /health/ready probe) and stop routing new traffic before the HTTP server
+// actually stops accepting connections.
+const SHUTDOWN_GRACE_PERIOD_MS = 5000;
+// Safety net in case app.close() hangs (e.g. a keep-alive connection that
+// never goes idle) so the process still exits instead of running forever.
+const SHUTDOWN_HARD_TIMEOUT_MS = 15000;
 
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
@@ -52,6 +62,35 @@ async function bootstrap() {
   });
 
   await app.listen(configService.getOrThrow<number>('app.port'));
+
+  const logger = new Logger('Bootstrap');
+  const shutdownService = app.get(ShutdownService);
+  let shuttingDown = false;
+
+  const shutdown = async (signal: NodeJS.Signals) => {
+    if (shuttingDown) return;
+    shuttingDown = true;
+
+    logger.log(`Received ${signal}, starting graceful shutdown`);
+    shutdownService.beginShutdown();
+
+    const hardTimeout = setTimeout(() => {
+      logger.error('Graceful shutdown timed out, forcing exit');
+      process.exit(1);
+    }, SHUTDOWN_GRACE_PERIOD_MS + SHUTDOWN_HARD_TIMEOUT_MS);
+    hardTimeout.unref();
+
+    await new Promise((resolve) =>
+      setTimeout(resolve, SHUTDOWN_GRACE_PERIOD_MS),
+    );
+
+    await app.close();
+    logger.log('Graceful shutdown complete');
+    process.exit(0);
+  };
+
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 }
 
 bootstrap();
