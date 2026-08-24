@@ -9,7 +9,7 @@ import {
 import { Response } from 'express';
 import { ApiResponse } from '../types/api-response.interface';
 import { ERROR_CODES } from './error-codes';
-import { v4 as uuidv4 } from 'uuid';
+import { getRequestId } from '../logging/request-context';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -18,9 +18,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
   catch(exception: unknown, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest();
-
-    const requestId = request.headers['x-request-id'] || uuidv4();
+    const requestId = getRequestId();
 
     let status = HttpStatus.INTERNAL_SERVER_ERROR;
     let message = 'Internal server error';
@@ -79,10 +77,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
       const errorMessage =
         exception instanceof Error ? exception.message : String(exception);
       const stack = exception instanceof Error ? exception.stack : undefined;
-      this.logger.error(
-        `Unhandled HTTP exception requestId=${requestId}: ${errorMessage}`,
-        stack,
-      );
+      this.logger.error(`Unhandled HTTP exception: ${errorMessage}`, stack);
     }
 
     response.status(status).json(errorResponse);

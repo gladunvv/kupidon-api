@@ -12,6 +12,7 @@ import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { ShutdownService } from './health/shutdown.service';
+import { StructuredLoggerService } from './core/logging/structured-logger.service';
 
 // Time to let the orchestrator notice the readiness flip (via the next
 // /health/ready probe) and stop routing new traffic before the HTTP server
@@ -22,7 +23,9 @@ const SHUTDOWN_GRACE_PERIOD_MS = 5000;
 const SHUTDOWN_HARD_TIMEOUT_MS = 15000;
 
 async function bootstrap() {
-  const app = await NestFactory.create<NestExpressApplication>(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
+    logger: new StructuredLoggerService(),
+  });
   const configService = app.get(ConfigService);
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Kupidon API')

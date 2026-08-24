@@ -6,19 +6,16 @@ import {
 } from '@nestjs/common';
 import { Response } from 'express';
 import { MulterError } from 'multer';
-import { v4 as uuidv4 } from 'uuid';
 import { ERROR_CODES } from './error-codes';
 import { ApiResponse } from '../types/api-response.interface';
+import { getRequestId } from '../logging/request-context';
 
 @Catch(MulterError)
 export class MulterExceptionFilter implements ExceptionFilter {
   catch(exception: MulterError, host: ArgumentsHost) {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest();
-
-    const requestId =
-      request.requestId || request.headers['x-request-id'] || uuidv4();
+    const requestId = getRequestId();
 
     let message = 'File upload error';
     let errorCode: string = ERROR_CODES.BAD_REQUEST;
