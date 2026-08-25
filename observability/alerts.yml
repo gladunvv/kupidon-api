@@ -1,0 +1,29 @@
+groups:
+  - name: kupidon-api
+    rules:
+      - alert: InstanceDown
+        expr: up{job="kupidon-api"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kupidon API is unreachable
+          description: >-
+            Prometheus has not been able to scrape {{ $labels.instance }} for
+            1 minute.
+
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{status=~"5.."}[5m]))
+            /
+            sum(rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: High 5xx error rate on Kupidon API
+          description: >-
+            More than 5% of requests have returned a 5xx status over the
+            last 5 minutes.

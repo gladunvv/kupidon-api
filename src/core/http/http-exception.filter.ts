@@ -10,6 +10,7 @@ import { Response } from 'express';
 import { ApiResponse } from '../types/api-response.interface';
 import { ERROR_CODES } from './error-codes';
 import { getRequestId } from '../logging/request-context';
+import { captureException } from '../../observability/sentry';
 
 @Catch()
 export class HttpExceptionFilter implements ExceptionFilter {
@@ -78,6 +79,7 @@ export class HttpExceptionFilter implements ExceptionFilter {
         exception instanceof Error ? exception.message : String(exception);
       const stack = exception instanceof Error ? exception.stack : undefined;
       this.logger.error(`Unhandled HTTP exception: ${errorMessage}`, stack);
+      captureException(exception);
     }
 
     response.status(status).json(errorResponse);

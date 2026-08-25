@@ -78,6 +78,41 @@ docker compose down        # остановить, данные сохраняю
 docker compose down -v     # остановить и удалить volume с данными
 ```
 
+### Observability: метрики и алерты
+
+`GET /metrics` отдаёт метрики в формате Prometheus без авторизации: request
+rate/latency по методу и паттерну маршрута (не сырому URL — иначе каждый id в
+пути плодил бы новую time series), статус подключений к MongoDB/Redis,
+количество активных WebSocket-соединений, стандартные метрики процесса
+(uptime, память, event loop lag).
+
+Поднять Prometheus + Alertmanager поверх основного стека:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.observability.yml up --build
+```
+
+- Prometheus: [`http://localhost:9090`](http://localhost:9090)
+- Alertmanager: [`http://localhost:9093`](http://localhost:9093)
+
+Правила алертов в `observability/alerts.yml`: `InstanceDown` (нет ответа на
+scrape дольше минуты) и `HighErrorRate` (доля 5xx выше 5% за 5 минут).
+Получатель в `observability/alertmanager.yml` — заглушка: алерты
+маршрутизируются, но никуда не доставляются, пока туда не добавят реальный
+Slack/email/webhook (см. комментарий в файле).
+
+### Error tracking
+
+Опционально — Sentry. Без `sentry.dsn` в `config.yaml` ничего не
+активируется. Чтобы включить, добавь:
+
+```yaml
+sentry:
+  dsn: https://<key>@<org>.ingest.sentry.io/<project>
+```
+
+Отправляются только необработанные 5xx-ошибки — не 4xx.
+
 ## Swagger и Postman
 
 После запуска приложения доступны:
