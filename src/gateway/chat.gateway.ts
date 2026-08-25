@@ -13,6 +13,8 @@ import { DialogService } from '../dialog/dialog.service';
 import { JwtService } from '@nestjs/jwt';
 import { Logger } from '@nestjs/common';
 import { Types } from 'mongoose';
+import { v4 as uuidv4 } from 'uuid';
+import { runWithRequestId } from '../core/logging/request-context';
 
 @WebSocketGateway({
   cors: {
@@ -60,10 +62,13 @@ export class ChatGateway
 
         socket.data.userId = payload.sub;
         socket.data.phone = payload.phone;
+        socket.data.connectionId = uuidv4();
 
-        this.logger.log(
-          `Client authenticated: ${socket.id}, userId: ${payload.sub}`,
-        );
+        runWithRequestId(socket.data.connectionId, () => {
+          this.logger.log(
+            `Client authenticated: ${socket.id}, userId: ${payload.sub}`,
+          );
+        });
         next();
       } catch (error) {
         this.logger.error(
@@ -75,55 +80,61 @@ export class ChatGateway
   }
 
   handleConnection(client: Socket) {
-    this.logger.log(
-      `Client connected: ${client.id}, userId: ${client.data.userId}`,
-    );
+    runWithRequestId(client.data.connectionId, () => {
+      this.logger.log(
+        `Client connected: ${client.id}, userId: ${client.data.userId}`,
+      );
+    });
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.log(
-      `Client disconnected: ${client.id}, userId: ${client.data.userId}`,
-    );
+    runWithRequestId(client.data.connectionId, () => {
+      this.logger.log(
+        `Client disconnected: ${client.id}, userId: ${client.data.userId}`,
+      );
+    });
   }
 
   @SubscribeMessage('join_dialog')
-  async handleJoinDialog(
+  handleJoinDialog(
     @MessageBody() data: { dialogId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    try {
-      const { dialogId } = data;
-      const userId = client.data.userId;
+    return runWithRequestId(client.data.connectionId, async () => {
+      try {
+        const { dialogId } = data;
+        const userId = client.data.userId;
 
-      if (!dialogId) {
-        client.emit('chat_error', { message: 'Dialog ID is required' });
-        return;
-      }
+        if (!dialogId) {
+          client.emit('chat_error', { message: 'Dialog ID is required' });
+          return;
+        }
 
-      const dialog = await this.dialogService.getDialogWithPartner(
-        dialogId,
-        userId,
-      );
+        const dialog = await this.dialogService.getDialogWithPartner(
+          dialogId,
+          userId,
+        );
 
-      if (!dialog) {
-        client.emit('chat_error', {
-          message: 'Dialog not found or access denied',
+        if (!dialog) {
+          client.emit('chat_error', {
+            message: 'Dialog not found or access denied',
+          });
+          return;
+        }
+
+        await client.join(dialogId);
+        this.logger.log(`Client ${client.id} joined dialog ${dialogId}`);
+
+        client.emit('joined_dialog', {
+          dialogId,
+          success: true,
+          partner: dialog.partner,
         });
-        return;
+      } catch (error) {
+        this.logger.error(`Error joining dialog: ${error.message}`);
+        client.emit('chat_error', { message: 'Failed to join dialog' });
       }
-
-      await client.join(dialogId);
-      this.logger.log(`Client ${client.id} joined dialog ${dialogId}`);
-
-      client.emit('joined_dialog', {
-        dialogId,
-        success: true,
-        partner: dialog.partner,
-      });
-    } catch (error) {
-      this.logger.error(`Error joining dialog: ${error.message}`);
-      client.emit('chat_error', { message: 'Failed to join dialog' });
-    }
+    });
   }
 
   @SubscribeMessage('leave_dialog')
@@ -131,63 +142,67 @@ export class ChatGateway
     @MessageBody() data: { dialogId: string },
     @ConnectedSocket() client: Socket,
   ) {
-    const { dialogId } = data;
+    runWithRequestId(client.data.connectionId, () => {
+      const { dialogId } = data;
 
-    if (dialogId) {
-      client.leave(dialogId);
-      this.logger.log(`Client ${client.id} left dialog ${dialogId}`);
+      if (dialogId) {
+        client.leave(dialogId);
+        this.logger.log(`Client ${client.id} left dialog ${dialogId}`);
 
-      client.emit('left_dialog', {
-        dialogId,
-        success: true,
-      });
-    }
+        client.emit('left_dialog', {
+          dialogId,
+          success: true,
+        });
+      }
+    });
   }
 
   @SubscribeMessage('send_message')
-  async handleSendMessage(
+  handleSendMessage(
     @MessageBody() data: { dialogId: string; text: string },
     @ConnectedSocket() client: Socket,
   ) {
-    try {
-      const { dialogId, text } = data;
-      const userId = client.data.userId;
+    return runWithRequestId(client.data.connectionId, async () => {
+      try {
+        const { dialogId, text } = data;
+        const userId = client.data.userId;
 
-      if (!dialogId || !text || text.trim().length === 0) {
-        client.emit('chat_error', {
-          message: 'Dialog ID and message text are required',
+        if (!dialogId || !text || text.trim().length === 0) {
+          client.emit('chat_error', {
+            message: 'Dialog ID and message text are required',
+          });
+          return;
+        }
+        const message = await this.dialogService.sendMessage(
+          dialogId,
+          userId,
+          text.trim(),
+        );
+
+        const sender = message.sender as unknown as {
+          _id: Types.ObjectId;
+          name: string;
+        };
+        const senderId = sender._id.toString();
+
+        this.server.to(dialogId).emit('new_message', {
+          _id: message._id,
+          text: message.text,
+          sender: {
+            _id: sender._id,
+            name: sender.name,
+          },
+          dialogId,
+          created_at: message.created_at,
+          isFromCurrentUser: userId === senderId,
         });
-        return;
+
+        this.logger.log(`Message sent in dialog ${dialogId} by user ${userId}`);
+      } catch (error) {
+        this.logger.error(`Error sending message: ${error.message}`);
+        client.emit('chat_error', { message: 'Failed to send message' });
       }
-      const message = await this.dialogService.sendMessage(
-        dialogId,
-        userId,
-        text.trim(),
-      );
-
-      const sender = message.sender as unknown as {
-        _id: Types.ObjectId;
-        name: string;
-      };
-      const senderId = sender._id.toString();
-
-      this.server.to(dialogId).emit('new_message', {
-        _id: message._id,
-        text: message.text,
-        sender: {
-          _id: sender._id,
-          name: sender.name,
-        },
-        dialogId,
-        created_at: message.created_at,
-        isFromCurrentUser: userId === senderId,
-      });
-
-      this.logger.log(`Message sent in dialog ${dialogId} by user ${userId}`);
-    } catch (error) {
-      this.logger.error(`Error sending message: ${error.message}`);
-      client.emit('chat_error', { message: 'Failed to send message' });
-    }
+    });
   }
 
   // TODO

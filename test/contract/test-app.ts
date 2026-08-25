@@ -11,6 +11,7 @@ import { JwtModule, JwtService } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
 import cookieParser from 'cookie-parser';
+import { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
 import { AppController } from '../../src/app.controller';
 import { AppService } from '../../src/app.service';
@@ -23,6 +24,7 @@ import { HttpExceptionFilter } from '../../src/core/http/http-exception.filter';
 import { MulterExceptionFilter } from '../../src/core/http/multer-exception.filter';
 import { ResponseInterceptor } from '../../src/core/http/response.interceptor';
 import { ERROR_CODES } from '../../src/core/http/error-codes';
+import { RequestLoggingMiddleware } from '../../src/core/logging/request-logging.middleware';
 import { validationPipe } from '../../src/core/pipes/validation.pipe';
 import { DialogController } from '../../src/dialog/dialog.controller';
 import { DialogService } from '../../src/dialog/dialog.service';
@@ -724,6 +726,10 @@ export async function createTestApp() {
   const app = moduleRef.createNestApplication();
   const reflector = app.get(Reflector);
 
+  const requestLoggingMiddleware = new RequestLoggingMiddleware();
+  app.use((req: Request, res: Response, next: NextFunction) =>
+    requestLoggingMiddleware.use(req, res, next),
+  );
   app.use(cookieParser());
   app.useGlobalPipes(validationPipe);
   app.useGlobalFilters(new MulterExceptionFilter(), new HttpExceptionFilter());

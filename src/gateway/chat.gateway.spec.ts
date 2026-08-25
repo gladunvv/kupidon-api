@@ -54,6 +54,7 @@ describe('ChatGateway authentication', () => {
     expect(socket.data).toEqual({
       userId: '507f1f77bcf86cd799439011',
       phone: '+79990001122',
+      connectionId: expect.any(String),
     });
     expect(next).toHaveBeenCalledWith();
   });

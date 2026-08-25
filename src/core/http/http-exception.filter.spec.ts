@@ -9,17 +9,17 @@ import {
 import { MulterError } from 'multer';
 import { HttpExceptionFilter } from './http-exception.filter';
 import { MulterExceptionFilter } from './multer-exception.filter';
+import { runWithRequestId } from '../logging/request-context';
 
 const createHttpHost = () => {
   const response = {
     status: jest.fn().mockReturnThis(),
     json: jest.fn(),
   };
-  const request = { headers: { 'x-request-id': 'safe-request-id' } };
   const host = {
     switchToHttp: () => ({
       getResponse: () => response,
-      getRequest: () => request,
+      getRequest: () => ({}),
     }),
   } as ArgumentsHost;
 
@@ -45,7 +45,9 @@ describe('HttpExceptionFilter error sanitization', () => {
   ])('returns one generic response for server errors', (exception) => {
     const { host, response } = createHttpHost();
 
-    new HttpExceptionFilter().catch(exception, host);
+    runWithRequestId('safe-request-id', () =>
+      new HttpExceptionFilter().catch(exception, host),
+    );
 
     expect(response.status).toHaveBeenCalledWith(
       HttpStatus.INTERNAL_SERVER_ERROR,
