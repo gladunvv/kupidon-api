@@ -13,6 +13,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { ShutdownService } from './health/shutdown.service';
 import { StructuredLoggerService } from './core/logging/structured-logger.service';
+import { initSentry } from './observability/sentry';
 
 // Time to let the orchestrator notice the readiness flip (via the next
 // /health/ready probe) and stop routing new traffic before the HTTP server
@@ -27,6 +28,7 @@ async function bootstrap() {
     logger: new StructuredLoggerService(),
   });
   const configService = app.get(ConfigService);
+  initSentry(configService.get<string>('sentry.dsn'));
   const swaggerConfig = new DocumentBuilder()
     .setTitle('Kupidon API')
     .setDescription('OpenAPI schema for Kupidon backend')

@@ -101,6 +101,11 @@ export class EncryptionConfig {
   key!: string;
 }
 
+export class SentryConfig {
+  @IsString()
+  dsn!: string;
+}
+
 export class RootConfig {
   @ValidateNested()
   @Type(() => AppConfig)
@@ -125,4 +130,9 @@ export class RootConfig {
   @ValidateNested()
   @Type(() => EncryptionConfig)
   encryption!: EncryptionConfig;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SentryConfig)
+  sentry?: SentryConfig;
 }

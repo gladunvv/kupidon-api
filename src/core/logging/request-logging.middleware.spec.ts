@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { RequestLoggingMiddleware } from './request-logging.middleware';
 import { getRequestId } from './request-context';
+import { MetricsService } from '../../observability/metrics.service';
 
 describe('RequestLoggingMiddleware', () => {
   const makeRes = () => {
@@ -66,5 +67,52 @@ describe('RequestLoggingMiddleware', () => {
     expect(written).toContain('201');
 
     stdoutSpy.mockRestore();
+  });
+
+  it('records HTTP metrics using the route pattern, not the raw URL', () => {
+    const metricsService = new MetricsService();
+    const recordSpy = jest.spyOn(metricsService, 'recordHttpRequest');
+    const middleware = new RequestLoggingMiddleware(metricsService);
+    const req = {
+      headers: {},
+      method: 'GET',
+      originalUrl: '/match/507f1f77bcf86cd799439011',
+      route: { path: '/match/:matchId' },
+    } as any;
+    const res = makeRes();
+    res.statusCode = 200;
+
+    middleware.use(req, res, () => {});
+    res.emit('finish');
+
+    expect(recordSpy).toHaveBeenCalledWith(
+      'GET',
+      '/match/:matchId',
+      200,
+      expect.any(Number),
+    );
+  });
+
+  it('falls back to "unmatched" when no route was resolved', () => {
+    const metricsService = new MetricsService();
+    const recordSpy = jest.spyOn(metricsService, 'recordHttpRequest');
+    const middleware = new RequestLoggingMiddleware(metricsService);
+    const req = {
+      headers: {},
+      method: 'GET',
+      originalUrl: '/does-not-exist',
+    } as any;
+    const res = makeRes();
+    res.statusCode = 404;
+
+    middleware.use(req, res, () => {});
+    res.emit('finish');
+
+    expect(recordSpy).toHaveBeenCalledWith(
+      'GET',
+      'unmatched',
+      404,
+      expect.any(Number),
+    );
   });
 });

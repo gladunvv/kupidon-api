@@ -1,0 +1,19 @@
+# Alerting rules and routing exist and are exercised (see alerts.yml), but
+# no notification channel is wired up yet. Alerts route here and are
+# silently dropped until a real receiver is added, for example:
+#
+# receivers:
+#   - name: default
+#     slack_configs:
+#       - api_url: '<slack-webhook-url>'
+#         channel: '#alerts'
+#     email_configs:
+#       - to: 'oncall@example.com'
+#         from: 'alerts@example.com'
+#         smarthost: 'smtp.example.com:587'
+
+route:
+  receiver: default
+
+receivers:
+  - name: default

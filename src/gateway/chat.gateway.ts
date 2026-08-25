@@ -11,10 +11,11 @@ import {
 import { Server, Socket } from 'socket.io';
 import { DialogService } from '../dialog/dialog.service';
 import { JwtService } from '@nestjs/jwt';
-import { Logger } from '@nestjs/common';
+import { Logger, Optional } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { v4 as uuidv4 } from 'uuid';
 import { runWithRequestId } from '../core/logging/request-context';
+import { MetricsService } from '../observability/metrics.service';
 
 @WebSocketGateway({
   cors: {
@@ -31,6 +32,7 @@ export class ChatGateway
   constructor(
     private readonly dialogService: DialogService,
     private readonly jwtService: JwtService,
+    @Optional() private readonly metricsService?: MetricsService,
   ) {}
 
   afterInit(server: Server) {
@@ -80,6 +82,7 @@ export class ChatGateway
   }
 
   handleConnection(client: Socket) {
+    this.metricsService?.websocketConnections.inc();
     runWithRequestId(client.data.connectionId, () => {
       this.logger.log(
         `Client connected: ${client.id}, userId: ${client.data.userId}`,
@@ -88,6 +91,7 @@ export class ChatGateway
   }
 
   handleDisconnect(client: Socket) {
+    this.metricsService?.websocketConnections.dec();
     runWithRequestId(client.data.connectionId, () => {
       this.logger.log(
         `Client disconnected: ${client.id}, userId: ${client.data.userId}`,
