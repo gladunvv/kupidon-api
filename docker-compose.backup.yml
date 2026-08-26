@@ -1,0 +1,19 @@
+services:
+  mongo-backup:
+    image: mongo:7
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    environment:
+      MONGO_URI: mongodb://mongodb:27017/datingapp
+      BACKUP_DIR: /backups
+      BACKUP_PASSPHRASE: ${BACKUP_PASSPHRASE:?Set BACKUP_PASSPHRASE before starting the backup service}
+      RETENTION_DAYS: '7'
+      BACKUP_INTERVAL_SECONDS: '86400'
+    volumes:
+      - ./backup:/scripts:ro
+      - backup-data:/backups
+    entrypoint: ['/bin/sh', '/scripts/schedule.sh']
+
+volumes:
+  backup-data:
