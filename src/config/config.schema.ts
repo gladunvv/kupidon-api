@@ -95,10 +95,26 @@ export class OtpConfig {
   blockSeconds?: number;
 }
 
-export class EncryptionConfig {
+export class EncryptionKeyConfig {
+  @IsInt()
+  @Min(1)
+  version!: number;
+
   @IsString()
   @Matches(/^[0-9a-fA-F]{64}$/)
   key!: string;
+}
+
+export class EncryptionConfig {
+  @IsInt()
+  @Min(1)
+  currentVersion!: number;
+
+  @IsArray()
+  @ArrayNotEmpty()
+  @ValidateNested({ each: true })
+  @Type(() => EncryptionKeyConfig)
+  keys!: EncryptionKeyConfig[];
 }
 
 export class SentryConfig {
