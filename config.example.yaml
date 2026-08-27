@@ -28,8 +28,16 @@ otp:
   blockSeconds: 900
 
 encryption:
-  # 32-byte key encoded as 64 hexadecimal characters. Replace in production.
-  key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+  # Supports key rotation: keep every version a currently-stored message was
+  # ever encrypted under so old messages stay decryptable, and point
+  # currentVersion at the one new messages should use. To rotate, add a new
+  # entry and bump currentVersion — do not remove old entries while any
+  # message still references them.
+  currentVersion: 1
+  keys:
+    # 32-byte key encoded as 64 hexadecimal characters. Replace in production.
+    - version: 1
+      key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
 # Optional. Omit this section entirely to run without error tracking (the
 # default). Uncomment and set a real DSN to send unhandled 5xx errors to
