@@ -29,17 +29,22 @@ async function bootstrap() {
   });
   const configService = app.get(ConfigService);
   initSentry(configService.get<string>('sentry.dsn'));
-  const swaggerConfig = new DocumentBuilder()
-    .setTitle('Kupidon API')
-    .setDescription('OpenAPI schema for Kupidon backend')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
 
-  const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, swaggerDocument, {
-    jsonDocumentUrl: 'docs-json',
-  });
+  // Publishing the full route/DTO surface is a reconnaissance aid in
+  // production; keep it available everywhere else (dev, staging, CI).
+  if (process.env.NODE_ENV !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Kupidon API')
+      .setDescription('OpenAPI schema for Kupidon backend')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+
+    const swaggerDocument = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('docs', app, swaggerDocument, {
+      jsonDocumentUrl: 'docs-json',
+    });
+  }
 
   app.use(cookieParser());
   app.useStaticAssets(join(process.cwd(), 'uploads'), {

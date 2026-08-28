@@ -80,11 +80,18 @@ docker compose down -v     # остановить и удалить volume с д
 
 ### Observability: метрики и алерты
 
-`GET /metrics` отдаёт метрики в формате Prometheus без авторизации: request
-rate/latency по методу и паттерну маршрута (не сырому URL — иначе каждый id в
-пути плодил бы новую time series), статус подключений к MongoDB/Redis,
-количество активных WebSocket-соединений, стандартные метрики процесса
-(uptime, память, event loop lag).
+`GET /metrics` отдаёт метрики в формате Prometheus: request rate/latency по
+методу и паттерну маршрута (не сырому URL — иначе каждый id в пути плодил бы
+новую time series), статус подключений к MongoDB/Redis, количество активных
+WebSocket-соединений, стандартные метрики процесса (uptime, память, event
+loop lag, версия Node.js).
+
+По умолчанию без авторизации — этого достаточно, пока эндпоинт доступен
+только Prometheus внутри приватной сети (как в `docker-compose.yml`). Если
+`/metrics` окажется доступен снаружи, задай `metrics.token` в `config.yaml` —
+без верного `Authorization: Bearer <token>` эндпоинт начнёт отвечать `401`
+(сравнение constant-time). Тот же токен нужно прописать в
+`scrape_configs` Prometheus (`authorization.credentials`).
 
 Поднять Prometheus + Alertmanager поверх основного стека:
 
@@ -185,7 +192,9 @@ access- и refresh-токены немедленно становятся нев
 
 ## Swagger и Postman
 
-После запуска приложения доступны:
+Доступны только когда `NODE_ENV` не равен `production` (в проде — `404`;
+`Dockerfile` уже ставит `NODE_ENV=production`, так что production-образ
+Swagger не публикует). Локально при `npm run start:dev`:
 
 - Swagger UI: [`http://localhost:8000/docs`](http://localhost:8000/docs)
 - OpenAPI JSON: [`http://localhost:8000/docs-json`](http://localhost:8000/docs-json)

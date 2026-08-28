@@ -44,3 +44,11 @@ encryption:
 # Sentry.
 # sentry:
 #   dsn: https://examplePublicKey@o0.ingest.sentry.io/0
+
+# Optional. Omit to leave GET /metrics unauthenticated (fine for local dev
+# and a compose stack Prometheus reaches over a private network). Set a
+# token for any deployment where /metrics is reachable from outside a
+# trusted network — Prometheus sends it back via a bearer_token scrape
+# config option.
+# metrics:
+#   token: change-this-metrics-scrape-token

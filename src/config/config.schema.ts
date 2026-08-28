@@ -122,6 +122,11 @@ export class SentryConfig {
   dsn!: string;
 }
 
+export class MetricsConfig {
+  @IsString()
+  token!: string;
+}
+
 export class RootConfig {
   @ValidateNested()
   @Type(() => AppConfig)
@@ -151,4 +156,9 @@ export class RootConfig {
   @ValidateNested()
   @Type(() => SentryConfig)
   sentry?: SentryConfig;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => MetricsConfig)
+  metrics?: MetricsConfig;
 }
