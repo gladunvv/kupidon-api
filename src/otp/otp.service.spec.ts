@@ -1,11 +1,15 @@
 import { HttpStatus } from '@nestjs/common';
 import { OtpService } from './otp.service';
+import { SmsProvider } from './providers/sms-provider.interface';
 
 describe('OtpService abuse protection', () => {
   const phone = '+79990001122';
   const clientIp = '203.0.113.10';
 
-  const createService = (...evalResults: number[]) => {
+  const createService = (
+    evalResults: number[] = [],
+    smsProvider?: SmsProvider,
+  ) => {
     const redis = {
       eval: jest.fn(),
     };
@@ -19,15 +23,23 @@ describe('OtpService abuse protection', () => {
       ),
       get: jest.fn((_key: string, fallback: number) => fallback),
     };
+    const defaultSmsProvider: SmsProvider = {
+      send: jest.fn().mockResolvedValue({ success: true }),
+    };
 
     return {
       redis,
-      service: new OtpService(redisService as never, configService as never),
+      smsProvider: smsProvider ?? defaultSmsProvider,
+      service: new OtpService(
+        redisService as never,
+        configService as never,
+        (smsProvider ?? defaultSmsProvider) as never,
+      ),
     };
   };
 
   it('issues an OTP through one atomic Redis operation without exposing identifiers in keys', async () => {
-    const { redis, service } = createService(1);
+    const { redis, service } = createService([1]);
 
     const otp = await service.generateOtp(phone, clientIp);
 
@@ -41,7 +53,7 @@ describe('OtpService abuse protection', () => {
   it.each([-1, -2])(
     'rejects request limit result %s with HTTP 429',
     async (result) => {
-      const { service } = createService(result);
+      const { service } = createService([result]);
 
       await expect(service.generateOtp(phone, clientIp)).rejects.toMatchObject({
         status: HttpStatus.TOO_MANY_REQUESTS,
@@ -50,7 +62,7 @@ describe('OtpService abuse protection', () => {
   );
 
   it('accepts the OTP once and treats missing or invalid codes as invalid', async () => {
-    const { service } = createService(1, 0, 0);
+    const { service } = createService([1, 0, 0]);
 
     await expect(service.validateOtp(phone, '1234')).resolves.toBe(true);
     await expect(service.validateOtp(phone, '1234')).resolves.toBe(false);
@@ -60,7 +72,7 @@ describe('OtpService abuse protection', () => {
   it.each([-1, -2])(
     'blocks verification after attempt limit result %s',
     async (result) => {
-      const { service } = createService(result);
+      const { service } = createService([result]);
 
       await expect(service.validateOtp(phone, '0000')).rejects.toMatchObject({
         status: HttpStatus.TOO_MANY_REQUESTS,
@@ -71,13 +83,35 @@ describe('OtpService abuse protection', () => {
     },
   );
 
-  it('does not log the OTP or phone in the delivery placeholder', async () => {
-    const { service } = createService();
-    const consoleSpy = jest.spyOn(console, 'log').mockImplementation();
+  describe('sendOtp', () => {
+    it('delegates delivery to the configured SMS provider', async () => {
+      const smsProvider: SmsProvider = {
+        send: jest.fn().mockResolvedValue({ success: true }),
+      };
+      const { service } = createService([], smsProvider);
 
-    await service.sendOtp(phone, '1234');
+      await service.sendOtp(phone, '1234');
 
-    expect(consoleSpy).not.toHaveBeenCalled();
-    consoleSpy.mockRestore();
+      expect(smsProvider.send).toHaveBeenCalledWith(
+        phone,
+        expect.stringContaining('1234'),
+      );
+    });
+
+    it('raises a delivery error when the provider fails', async () => {
+      const smsProvider: SmsProvider = {
+        send: jest
+          .fn()
+          .mockResolvedValue({ success: false, error: 'provider down' }),
+      };
+      const { service } = createService([], smsProvider);
+
+      await expect(service.sendOtp(phone, '1234')).rejects.toMatchObject({
+        status: HttpStatus.BAD_GATEWAY,
+        response: expect.objectContaining({
+          code: 'OTP_DELIVERY_FAILED',
+        }),
+      });
+    });
   });
 });

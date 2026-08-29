@@ -1,6 +1,7 @@
 import { ConfigService } from '@nestjs/config';
 import type { Redis } from 'ioredis';
 import { OtpService } from '../../src/otp/otp.service';
+import { SandboxSmsProvider } from '../../src/otp/providers/sandbox-sms.provider';
 import { createTestRedis } from './support/redis';
 import { integrationConfig } from './support/config';
 
@@ -31,7 +32,11 @@ describe('OtpService (real Redis)', () => {
       },
     } as unknown as ConfigService;
 
-    service = new OtpService(redisService, configService);
+    service = new OtpService(
+      redisService,
+      configService,
+      new SandboxSmsProvider(),
+    );
   });
 
   beforeEach(async () => {
