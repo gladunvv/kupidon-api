@@ -1,9 +1,10 @@
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { RedisService } from '@liaoliaots/nestjs-redis';
 import { createHash, randomInt } from 'crypto';
 import { ERROR_CODES } from '../core/http/error-codes';
+import { SMS_PROVIDER, SmsProvider } from './providers/sms-provider.interface';
 
 const ISSUE_OTP_SCRIPT = `
 if redis.call('EXISTS', KEYS[1]) == 1 then return -1 end
@@ -51,6 +52,7 @@ export class OtpService {
   constructor(
     private readonly redisService: RedisService,
     private readonly configService: ConfigService,
+    @Inject(SMS_PROVIDER) private readonly smsProvider: SmsProvider,
   ) {
     this.redis = this.redisService.getOrThrow();
     this.ttlSeconds = this.configService.getOrThrow<number>('otp.ttlSeconds');
@@ -114,8 +116,21 @@ export class OtpService {
     return otp;
   }
 
-  async sendOtp(_phoneNumber: string, _otp: string): Promise<void> {
-    return;
+  async sendOtp(phoneNumber: string, otp: string): Promise<void> {
+    const result = await this.smsProvider.send(
+      phoneNumber,
+      `Your Kupidon verification code is ${otp}`,
+    );
+
+    if (!result.success) {
+      throw new HttpException(
+        {
+          message: 'Failed to send OTP. Please try again later',
+          code: ERROR_CODES.OTP_DELIVERY_FAILED,
+        },
+        HttpStatus.BAD_GATEWAY,
+      );
+    }
   }
 
   async validateOtp(phoneNumber: string, otp: string): Promise<boolean> {
