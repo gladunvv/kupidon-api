@@ -134,6 +134,75 @@ describe('AuthService', () => {
     });
   });
 
+  describe('session management (single active session)', () => {
+    it('invalidates the previous refresh token when the same phone logs in again', async () => {
+      const otpService = { validateOtp: jest.fn().mockResolvedValue(true) };
+      const user = {
+        _id: { toString: () => 'user-1' },
+        phone: '+1',
+        refreshTokenHash: undefined as string | undefined,
+        save: jest.fn().mockResolvedValue(undefined),
+        toObject: jest.fn().mockImplementation(function (this: any) {
+          return {
+            _id: this._id,
+            phone: this.phone,
+            refreshTokenHash: this.refreshTokenHash,
+          };
+        }),
+      };
+      const userModel = {
+        findOne: jest.fn().mockResolvedValue(user),
+        findById: jest.fn().mockReturnValue({
+          select: jest.fn().mockResolvedValue(user),
+        }),
+      };
+      let tokenCounter = 0;
+      const jwtService = {
+        sign: jest.fn().mockImplementation((payload) => {
+          tokenCounter += 1;
+          return payload.type === 'access'
+            ? `access-${tokenCounter}`
+            : `refresh-${tokenCounter}`;
+        }),
+        verify: jest
+          .fn()
+          .mockReturnValue({ sub: 'user-1', phone: '+1', type: 'refresh' }),
+      };
+      const service = new AuthService(
+        userModel as never,
+        jwtService as never,
+        otpService as never,
+        makeConfigService() as never,
+      );
+
+      const resDeviceA = makeRes();
+      await service.verifyOtp(
+        { phone: '+1', otp: '1234' },
+        resDeviceA as never,
+      );
+      const deviceARefreshToken = resDeviceA.cookie.mock.calls[0][1];
+
+      const resDeviceB = makeRes();
+      await service.verifyOtp(
+        { phone: '+1', otp: '1234' },
+        resDeviceB as never,
+      );
+      const deviceBRefreshToken = resDeviceB.cookie.mock.calls[0][1];
+
+      expect(deviceARefreshToken).not.toBe(deviceBRefreshToken);
+
+      await expect(
+        service.refreshToken(deviceARefreshToken, makeRes() as never),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({ code: ERROR_CODES.INVALID_TOKEN }),
+      });
+
+      await expect(
+        service.refreshToken(deviceBRefreshToken, makeRes() as never),
+      ).resolves.toMatchObject({ access_token: expect.any(String) });
+    });
+  });
+
   describe('refreshToken', () => {
     it('rejects a missing token without attempting verification', async () => {
       const jwtService = { verify: jest.fn() };
