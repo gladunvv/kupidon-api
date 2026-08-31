@@ -93,6 +93,32 @@ describe('AuthService refresh rotation (real MongoDB)', () => {
     ).resolves.toMatchObject({ access_token: expect.any(String) });
   }, 10000);
 
+  it('invalidates the previous session when the same phone logs in again (single active session)', async () => {
+    const phone = '+79990009933';
+
+    const resDeviceA = makeRes();
+    await authService.verifyOtp({ phone, otp: '1234' }, resDeviceA as never);
+    const deviceARefreshToken = resDeviceA.cookie.mock.calls[0][1];
+
+    await waitPastJwtSecondBoundary();
+
+    const resDeviceB = makeRes();
+    await authService.verifyOtp({ phone, otp: '1234' }, resDeviceB as never);
+    const deviceBRefreshToken = resDeviceB.cookie.mock.calls[0][1];
+
+    expect(deviceARefreshToken).not.toBe(deviceBRefreshToken);
+
+    await expect(
+      authService.refreshToken(deviceARefreshToken, makeRes() as never),
+    ).rejects.toMatchObject({
+      response: expect.objectContaining({ code: ERROR_CODES.INVALID_TOKEN }),
+    });
+
+    await expect(
+      authService.refreshToken(deviceBRefreshToken, makeRes() as never),
+    ).resolves.toMatchObject({ access_token: expect.any(String) });
+  }, 10000);
+
   it('rejects a refresh token after logout clears the stored hash', async () => {
     const verifyRes = makeRes();
     await authService.verifyOtp(
