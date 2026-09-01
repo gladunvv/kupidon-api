@@ -52,49 +52,10 @@ export class DialogService {
         addPartnerId(userObjectId),
         lookupPartnerUser(PARTNER_FIELDS_FULL),
         {
-          $lookup: {
-            from: 'messages',
-            localField: '_id',
-            foreignField: 'dialogId',
-            as: 'messagesData',
-            pipeline: [
-              {
-                $lookup: {
-                  from: 'users',
-                  localField: 'sender',
-                  foreignField: '_id',
-                  as: 'senderData',
-                  pipeline: [{ $project: { name: 1 } }],
-                },
-              },
-              {
-                $addFields: {
-                  senderName: { $arrayElemAt: ['$senderData.name', 0] },
-                  isFromCurrentUser: { $eq: ['$sender', userObjectId] },
-                },
-              },
-              {
-                $project: {
-                  _id: 1,
-                  ciphertext: 1,
-                  iv: 1,
-                  authTag: 1,
-                  keyVersion: 1,
-                  sender: { _id: '$sender', name: '$senderName' },
-                  isFromCurrentUser: 1,
-                  created_at: 1,
-                },
-              },
-              { $sort: { created_at: 1 } },
-            ],
-          },
-        },
-        {
           $project: {
             _id: 1,
             matchId: 1,
             partner: { $arrayElemAt: ['$partner', 0] },
-            messages: '$messagesData',
             isActive: 1,
             created_at: 1,
             updated_at: 1,
@@ -107,12 +68,69 @@ export class DialogService {
       throw new NotFoundException('Dialog not found or access denied');
     }
 
-    return {
-      ...dialogs[0],
-      messages: dialogs[0].messages.map((message) =>
-        this.decryptMessage(message),
-      ),
-    };
+    return dialogs[0];
+  }
+
+  // Cursor pagination (keyset, by _id) rather than skip/limit: a page is
+  // defined by "before this message id", not by a numeric offset, so
+  // messages sent concurrently while a client is paging never shift
+  // already-fetched pages — no gaps, no duplicates.
+  async getMessages(
+    dialogId: string,
+    userId: string,
+    options: { limit: number; before?: string },
+  ) {
+    const userObjectId = new Types.ObjectId(userId);
+    const dialogObjectId = new Types.ObjectId(dialogId);
+
+    const dialog = await this.dialogModel.findOne({
+      _id: dialogObjectId,
+      $or: [{ user1: userObjectId }, { user2: userObjectId }],
+      isActive: true,
+    });
+    if (!dialog) {
+      throw new NotFoundException('Dialog not found or access denied');
+    }
+
+    const filter: Record<string, unknown> = { dialogId: dialogObjectId };
+    if (options.before) {
+      filter._id = { $lt: new Types.ObjectId(options.before) };
+    }
+
+    // Fetch one extra to learn whether another page exists without a
+    // separate count query.
+    const rows = await this.messageModel
+      .find(filter)
+      .sort({ _id: -1 })
+      .limit(options.limit + 1)
+      .populate('sender', 'name')
+      .exec();
+
+    const hasMore = rows.length > options.limit;
+    const page = rows.slice(0, options.limit);
+    const nextCursor = hasMore ? page[page.length - 1]._id.toString() : null;
+
+    const messages = page.reverse().map((message) => {
+      const sender = message.sender as unknown as {
+        _id: Types.ObjectId;
+        name: string;
+      };
+
+      return {
+        _id: message._id,
+        text: this.encryptionService.decrypt({
+          ciphertext: message.ciphertext,
+          iv: message.iv,
+          authTag: message.authTag,
+          keyVersion: message.keyVersion,
+        }),
+        sender,
+        isFromCurrentUser: sender._id.equals(userObjectId),
+        created_at: message.created_at,
+      };
+    });
+
+    return { messages, pagination: { hasMore, nextCursor } };
   }
 
   async sendMessage(dialogId: string, senderId: string, text: string) {

@@ -1,4 +1,8 @@
 export const integrationConfig = {
+  encryption: {
+    currentVersion: 1,
+    keys: [{ version: 1, key: '0'.repeat(64) }],
+  },
   otp: {
     ttlSeconds: 2,
     length: 4,

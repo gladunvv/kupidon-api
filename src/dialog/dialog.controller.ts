@@ -1,4 +1,12 @@
-import { Controller, Get, Param, UseGuards, Post, Body } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Param,
+  Query,
+  UseGuards,
+  Post,
+  Body,
+} from '@nestjs/common';
 import { DialogService } from './dialog.service';
 import { JwtAuthGuard } from '../auth/guards/auth-guard';
 import {
@@ -9,6 +17,7 @@ import {
 } from '@nestjs/swagger';
 import { CreateDialogDto } from './dto/dialog-create.dto';
 import { SendMessageDto } from './dto/dialog-send-message.dto';
+import { GetMessagesQueryDto } from './dto/get-messages-query.dto';
 import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
 import { ResponseMessage } from '../core/decorators/response-message.decorator';
 import { CurrentUser } from '../core/decorators/current-user.decorator';
@@ -39,7 +48,7 @@ export class DialogController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get dialog with partner and messages' })
+  @ApiOperation({ summary: 'Get dialog with partner' })
   @ApiParam({ name: 'id', example: '66123456789abcdef0123456' })
   @ResponseMessage('Dialog retrieved successfully')
   @Get(':id')
@@ -51,20 +60,23 @@ export class DialogController {
   }
 
   @UseGuards(JwtAuthGuard)
-  @ApiOperation({ summary: 'Get dialog messages only' })
+  @ApiOperation({
+    summary: 'Get dialog messages, newest page first',
+    description:
+      "Cursor-paginated: pass the previous response's pagination.nextCursor as `before` to load older messages.",
+  })
   @ApiParam({ name: 'id', example: '66123456789abcdef0123456' })
   @ResponseMessage('Messages retrieved successfully')
   @Get(':id/messages')
   async getMessages(
     @Param('id', ParseObjectIdPipe) id: string,
+    @Query() query: GetMessagesQueryDto,
     @CurrentUser('_id') userId: string,
   ) {
-    const dialog = await this.dialogService.getDialogWithPartner(id, userId);
-
-    return {
-      messages: dialog.messages,
-      partner: dialog.partner,
-    };
+    return this.dialogService.getMessages(id, userId, {
+      limit: query.limit,
+      before: query.before,
+    });
   }
 
   @UseGuards(JwtAuthGuard)

@@ -417,6 +417,7 @@ class TestMatchService {
 
 @Injectable()
 class TestDialogService {
+  private messageCounter = 40;
   private messages = [
     {
       _id: '507f1f77bcf86cd799439021',
@@ -426,7 +427,14 @@ class TestDialogService {
     },
   ];
 
+  private nextMessageId() {
+    const suffix = this.messageCounter.toString(16).padStart(2, '0');
+    this.messageCounter += 1;
+    return `507f1f77bcf86cd7994390${suffix}`;
+  }
+
   reset() {
+    this.messageCounter = 40;
     this.messages = [
       {
         _id: '507f1f77bcf86cd799439021',
@@ -481,9 +489,37 @@ class TestDialogService {
         name: 'Anna',
         photos: ['/uploads/anna-1.jpg'],
       },
-      messages: clone(this.messages),
-      messagesCount: this.messages.length,
       isActive: true,
+    };
+  }
+
+  async getMessages(
+    dialogId: string,
+    userId: string,
+    options: { limit: number; before?: string },
+  ) {
+    if (
+      dialogId !== testIds.dialog ||
+      ![testIds.user, testIds.matchedUser].includes(userId)
+    ) {
+      throw new NotFoundException('Dialog not found or access denied');
+    }
+
+    let pool = clone(this.messages);
+    if (options.before) {
+      const cursorIndex = pool.findIndex((m) => m._id === options.before);
+      pool = cursorIndex === -1 ? [] : pool.slice(0, cursorIndex);
+    }
+
+    const hasMore = pool.length > options.limit;
+    const page = pool.slice(Math.max(0, pool.length - options.limit));
+
+    return {
+      messages: page,
+      pagination: {
+        hasMore,
+        nextCursor: hasMore ? page[0]._id : null,
+      },
     };
   }
 
@@ -496,7 +532,7 @@ class TestDialogService {
     }
 
     const message = {
-      _id: '507f1f77bcf86cd799439022',
+      _id: this.nextMessageId(),
       text,
       sender: { _id: userId, name: userId === testIds.user ? 'Vlad' : 'Anna' },
       created_at: '2024-01-01T10:30:00.000Z',

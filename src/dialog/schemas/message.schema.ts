@@ -18,7 +18,7 @@ export class Message {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true })
   sender: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Dialog', required: true, index: true })
+  @Prop({ type: Types.ObjectId, ref: 'Dialog', required: true })
   dialogId: Types.ObjectId;
 
   @Prop({ type: String })
@@ -46,6 +46,11 @@ export class Message {
 }
 
 const MessageSchema = SchemaFactory.createForClass(Message);
+
+// Serves both "all messages in a dialog" and the cursor-paginated query
+// (find({dialogId, _id: {$lt: cursor}}).sort({_id: -1})) without an
+// in-memory sort.
+MessageSchema.index({ dialogId: 1, _id: -1 }, { name: 'dialog_messages_page' });
 
 @Module({
   imports: [

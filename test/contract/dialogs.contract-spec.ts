@@ -115,12 +115,12 @@ describe('DialogController (contract)', () => {
       expect.objectContaining({
         _id: testIds.dialog,
         partner: expect.any(Object),
-        messages: expect.any(Array),
       }),
     );
+    expect(response.body.data.messages).toBeUndefined();
   });
 
-  it('GET /dialogs/:id/messages returns dialog messages', async () => {
+  it('GET /dialogs/:id/messages returns a paginated page of messages', async () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
@@ -132,10 +132,61 @@ describe('DialogController (contract)', () => {
     expect(response.body.data).toEqual(
       expect.objectContaining({
         messages: expect.any(Array),
-        partner: expect.any(Object),
+        pagination: {
+          hasMore: false,
+          nextCursor: null,
+        },
       }),
     );
     expect(response.body.data.messages).toHaveLength(1);
+  });
+
+  it('GET /dialogs/:id/messages paginates with limit and before', async () => {
+    const { accessToken } = await createAuthorizedSession(getApp());
+
+    for (const text of ['second', 'third']) {
+      await request(getApp().getHttpServer())
+        .post(`/dialogs/${testIds.dialog}/messages`)
+        .set('Authorization', `Bearer ${accessToken}`)
+        .send({ text });
+    }
+
+    const firstPage = await request(getApp().getHttpServer())
+      .get(`/dialogs/${testIds.dialog}/messages`)
+      .query({ limit: 2 })
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(firstPage.body.data.messages).toHaveLength(2);
+    expect(firstPage.body.data.pagination.hasMore).toBe(true);
+    const cursor = firstPage.body.data.pagination.nextCursor;
+    expect(cursor).toEqual(expect.any(String));
+
+    const secondPage = await request(getApp().getHttpServer())
+      .get(`/dialogs/${testIds.dialog}/messages`)
+      .query({ limit: 2, before: cursor })
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(secondPage.body.data.messages).toHaveLength(1);
+    expect(secondPage.body.data.pagination.hasMore).toBe(false);
+    expect(secondPage.body.data.pagination.nextCursor).toBeNull();
+
+    const combinedIds = [
+      ...secondPage.body.data.messages,
+      ...firstPage.body.data.messages,
+    ].map((message: { _id: string }) => message._id);
+    expect(new Set(combinedIds).size).toBe(combinedIds.length);
+  });
+
+  it('GET /dialogs/:id/messages rejects an out-of-range limit', async () => {
+    const { accessToken } = await createAuthorizedSession(getApp());
+
+    const response = await request(getApp().getHttpServer())
+      .get(`/dialogs/${testIds.dialog}/messages`)
+      .query({ limit: 0 })
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(response.status).toBe(400);
+    expectErrorEnvelope(response.body, { code: 'BAD_REQUEST' });
   });
 
   it('GET /dialogs/:id validates object id', async () => {
