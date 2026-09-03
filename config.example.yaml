@@ -39,6 +39,18 @@ encryption:
     - version: 1
       key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
 
+# S3-compatible object storage for user photos. Point this at a local MinIO
+# (see docker-compose.yml) for development, or any real S3-compatible
+# bucket in production. publicUrl is the browser-reachable base URL that
+# gets embedded in stored photo URLs.
+storage:
+  endpoint: http://127.0.0.1:9000
+  region: us-east-1
+  bucket: kupidon-photos
+  accessKeyId: kupidon
+  secretAccessKey: change-this-storage-secret
+  publicUrl: http://127.0.0.1:9000/kupidon-photos
+
 # Optional. Omit this section entirely to run without error tracking (the
 # default). Uncomment and set a real DSN to send unhandled 5xx errors to
 # Sentry.

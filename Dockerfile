@@ -20,7 +20,6 @@ ENV NODE_ENV=production
 
 RUN addgroup -S kupidon \
   && adduser -S kupidon -G kupidon \
-  && mkdir -p uploads/photos \
   && chown -R kupidon:kupidon /app
 
 COPY --from=prod-deps --chown=kupidon:kupidon /app/node_modules ./node_modules

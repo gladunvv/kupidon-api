@@ -127,6 +127,28 @@ export class MetricsConfig {
   token!: string;
 }
 
+export class StorageConfig {
+  @IsString()
+  endpoint!: string;
+
+  @IsString()
+  region!: string;
+
+  @IsString()
+  bucket!: string;
+
+  @IsString()
+  accessKeyId!: string;
+
+  @IsString()
+  secretAccessKey!: string;
+
+  // Base URL embedded in photo URLs stored in Mongo, e.g.
+  // "https://cdn.example.com" or a browser-reachable MinIO endpoint.
+  @IsString()
+  publicUrl!: string;
+}
+
 export class RootConfig {
   @ValidateNested()
   @Type(() => AppConfig)
@@ -151,6 +173,10 @@ export class RootConfig {
   @ValidateNested()
   @Type(() => EncryptionConfig)
   encryption!: EncryptionConfig;
+
+  @ValidateNested()
+  @Type(() => StorageConfig)
+  storage!: StorageConfig;
 
   @IsOptional()
   @ValidateNested()

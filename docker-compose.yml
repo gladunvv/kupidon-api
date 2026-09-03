@@ -25,6 +25,24 @@ services:
       retries: 10
       start_period: 5s
 
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    environment:
+      MINIO_ROOT_USER: kupidon
+      MINIO_ROOT_PASSWORD: change-this-storage-secret
+    volumes:
+      - minio-data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+
   api:
     build:
       context: .
@@ -36,9 +54,10 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
+      minio:
+        condition: service_healthy
     volumes:
       - ./config.docker.yaml:/app/config.yaml:ro
-      - uploads-data:/app/uploads
     healthcheck:
       test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8000/health/ready"]
       interval: 10s
@@ -49,4 +68,4 @@ services:
 volumes:
   mongodb-data:
   redis-data:
-  uploads-data:
+  minio-data:

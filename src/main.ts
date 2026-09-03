@@ -7,7 +7,6 @@ import { ResponseInterceptor } from './core/http/response.interceptor';
 import { HttpExceptionFilter } from './core/http/http-exception.filter';
 import { MulterExceptionFilter } from './core/http/multer-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { join } from 'path';
 import cookieParser from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
@@ -47,9 +46,6 @@ async function bootstrap() {
   }
 
   app.use(cookieParser());
-  app.useStaticAssets(join(process.cwd(), 'uploads'), {
-    prefix: '/uploads',
-  });
 
   app.useGlobalPipes(validationPipe);
   app.useGlobalFilters(new MulterExceptionFilter(), new HttpExceptionFilter());

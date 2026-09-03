@@ -71,6 +71,19 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
+      - name: Start MinIO
+        # GitHub Actions service containers can't override the image's
+        # command, and MinIO needs "server /data" to start — run it as a
+        # plain background container instead.
+        run: |
+          docker run -d --name minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioadmin \
+            -e MINIO_ROOT_PASSWORD=minioadmin \
+            minio/minio:latest server /data
+          for i in $(seq 1 30); do
+            curl -sf http://127.0.0.1:9000/minio/health/live && break
+            sleep 1
+          done
       - run: npm ci
       - run: npm run test:integration
 
