@@ -18,6 +18,7 @@ import { MessageMongoModule } from './dialog/schemas/message.schema';
 import { EncryptionModule } from './encryption/encryption.module';
 import { HealthModule } from './health/health.module';
 import { MetricsModule } from './observability/metrics.module';
+import { StorageModule } from './storage/storage.module';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import configuration from './config/load-yaml.config';
 import { RevalidateModule } from 'nestjs-revalidate';
@@ -64,6 +65,7 @@ import { RevalidateModule } from 'nestjs-revalidate';
     EncryptionModule,
     HealthModule,
     MetricsModule,
+    StorageModule,
   ],
   controllers: [AppController],
   providers: [AppService],

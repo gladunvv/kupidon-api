@@ -34,3 +34,11 @@ encryption:
   keys:
     - version: 1
       key: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+
+storage:
+  endpoint: http://minio:9000
+  region: us-east-1
+  bucket: kupidon-photos
+  accessKeyId: kupidon
+  secretAccessKey: change-this-storage-secret
+  publicUrl: http://localhost:9000/kupidon-photos

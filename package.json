@@ -23,9 +23,12 @@
     "seed": "ts-node -r tsconfig-paths/register src/seed/seed.command.ts",
     "migrate:relationships:audit": "ts-node -r tsconfig-paths/register src/migrations/unique-relationships.command.ts",
     "migrate:relationships:apply": "ts-node -r tsconfig-paths/register src/migrations/unique-relationships.command.ts --apply",
-    "migrate:relationships:rollback": "ts-node -r tsconfig-paths/register src/migrations/unique-relationships.command.ts --rollback-indexes"
+    "migrate:relationships:rollback": "ts-node -r tsconfig-paths/register src/migrations/unique-relationships.command.ts --rollback-indexes",
+    "cleanup:orphan-photos:audit": "ts-node -r tsconfig-paths/register src/storage/orphan-photos.command.ts",
+    "cleanup:orphan-photos:apply": "ts-node -r tsconfig-paths/register src/storage/orphan-photos.command.ts --apply"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1125.0",
     "@liaoliaots/nestjs-redis": "^10.0.0",
     "@nestjs/common": "^10.0.0",
     "@nestjs/config": "^4.0.3",

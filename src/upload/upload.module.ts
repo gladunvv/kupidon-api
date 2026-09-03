@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MulterModule } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname } from 'path';
+import { memoryStorage } from 'multer';
 import { UploadService } from './upload.service';
 import { UploadController } from './upload.controller';
 import { UserMongoModule } from '../users/schemas/user.schema';
@@ -9,16 +8,7 @@ import { UserMongoModule } from '../users/schemas/user.schema';
 @Module({
   imports: [
     MulterModule.register({
-      storage: diskStorage({
-        destination: './uploads/photos',
-        filename: (_req, file, callback) => {
-          // Генерируем уникальное имя файла
-          const uniqueSuffix =
-            Date.now() + '-' + Math.round(Math.random() * 1e9);
-          const ext = extname(file.originalname);
-          callback(null, `photo-${uniqueSuffix}${ext}`);
-        },
-      }),
+      storage: memoryStorage(),
       fileFilter: (_req, file, callback) => {
         // Проверяем тип файла
         if (!file.mimetype.match(/\/(jpg|jpeg|png|gif|webp)$/)) {
