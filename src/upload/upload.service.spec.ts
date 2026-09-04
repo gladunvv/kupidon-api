@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import sharp from 'sharp';
 import { UploadService } from './upload.service';
 import { ERROR_CODES } from '../core/http/error-codes';
 
@@ -7,7 +8,7 @@ describe('UploadService photo invariants', () => {
   const publicUrl = 'http://127.0.0.1:9000/kupidon-photos';
 
   const makeStorageService = () => ({
-    upload: jest.fn(),
+    upload: jest.fn().mockResolvedValue(`${publicUrl}/users/${userId}/x.jpg`),
     delete: jest.fn().mockResolvedValue(undefined),
     deleteMany: jest.fn().mockResolvedValue(undefined),
     getKeyFromUrl: jest.fn((url: string) =>
@@ -15,12 +16,27 @@ describe('UploadService photo invariants', () => {
     ),
   });
 
-  const makeFile = (originalname: string) =>
-    ({
-      originalname,
-      buffer: Buffer.from(originalname),
-      mimetype: 'image/jpeg',
-    }) as Express.Multer.File;
+  const makeFile = (
+    buffer: Buffer,
+    originalname = 'photo.jpg',
+    mimetype = 'image/jpeg',
+  ) => ({ originalname, buffer, mimetype }) as Express.Multer.File;
+
+  const makeImage = (
+    width: number,
+    height: number,
+    format: 'jpeg' | 'png' | 'gif' = 'jpeg',
+  ) =>
+    sharp({
+      create: {
+        width,
+        height,
+        channels: 3,
+        background: { r: 200, g: 30, b: 30 },
+      },
+    })
+      [format]()
+      .toBuffer();
 
   describe('uploadPhotos', () => {
     it('rejects upload for a missing user', async () => {
@@ -32,7 +48,7 @@ describe('UploadService photo invariants', () => {
       );
 
       await expect(
-        service.uploadPhotos(userId, [makeFile('a.jpg')]),
+        service.uploadPhotos(userId, [makeFile(Buffer.from('a'))]),
       ).rejects.toMatchObject({
         response: expect.objectContaining({ code: ERROR_CODES.USER_NOT_FOUND }),
       });
@@ -51,7 +67,7 @@ describe('UploadService photo invariants', () => {
         userModel as never,
         storageService as never,
       );
-      const files = [makeFile('a.jpg'), makeFile('b.jpg')];
+      const files = [makeFile(Buffer.from('a')), makeFile(Buffer.from('b'))];
 
       await expect(service.uploadPhotos(userId, files)).rejects.toMatchObject({
         response: expect.objectContaining({
@@ -75,7 +91,7 @@ describe('UploadService photo invariants', () => {
         userModel as never,
         storageService as never,
       );
-      const files = [makeFile('a.jpg')];
+      const files = [makeFile(await makeImage(500, 500))];
 
       const result = await service.uploadPhotos(userId, files);
 
@@ -85,6 +101,11 @@ describe('UploadService photo invariants', () => {
       expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith(userId, {
         $push: { photos: { $each: [`${publicUrl}/users/${userId}/a.jpg`] } },
       });
+      expect(storageService.upload).toHaveBeenCalledWith(
+        expect.stringMatching(new RegExp(`^users/${userId}/.+\\.jpg$`)),
+        expect.any(Buffer),
+        'image/jpeg',
+      );
     });
 
     it('rolls back already-uploaded objects when a later upload fails', async () => {
@@ -100,7 +121,10 @@ describe('UploadService photo invariants', () => {
         userModel as never,
         storageService as never,
       );
-      const files = [makeFile('a.jpg'), makeFile('b.jpg')];
+      const files = [
+        makeFile(await makeImage(500, 500)),
+        makeFile(await makeImage(500, 500)),
+      ];
 
       await expect(service.uploadPhotos(userId, files)).rejects.toMatchObject({
         response: expect.objectContaining({
@@ -126,7 +150,10 @@ describe('UploadService photo invariants', () => {
         userModel as never,
         storageService as never,
       );
-      const files = [makeFile('a.jpg'), makeFile('b.jpg')];
+      const files = [
+        makeFile(await makeImage(500, 500)),
+        makeFile(await makeImage(500, 500)),
+      ];
 
       await expect(service.uploadPhotos(userId, files)).rejects.toThrow(
         'db down',
@@ -135,6 +162,166 @@ describe('UploadService photo invariants', () => {
         `users/${userId}/a.jpg`,
         `users/${userId}/b.jpg`,
       ]);
+    });
+  });
+
+  describe('uploadPhotos image validation and normalization', () => {
+    it('rejects a file whose content is not a real image, without touching storage', async () => {
+      const userModel = {
+        findById: jest.fn().mockResolvedValue({ photos: [] }),
+        findByIdAndUpdate: jest.fn(),
+      };
+      const storageService = makeStorageService();
+      const service = new UploadService(
+        userModel as never,
+        storageService as never,
+      );
+
+      await expect(
+        service.uploadPhotos(userId, [
+          makeFile(Buffer.from('not actually an image')),
+        ]),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({ code: ERROR_CODES.INVALID_IMAGE }),
+      });
+      expect(storageService.upload).not.toHaveBeenCalled();
+    });
+
+    it('rejects an image smaller than the minimum resolution', async () => {
+      const userModel = {
+        findById: jest.fn().mockResolvedValue({ photos: [] }),
+        findByIdAndUpdate: jest.fn(),
+      };
+      const storageService = makeStorageService();
+      const service = new UploadService(
+        userModel as never,
+        storageService as never,
+      );
+
+      await expect(
+        service.uploadPhotos(userId, [makeFile(await makeImage(100, 100))]),
+      ).rejects.toMatchObject({
+        response: expect.objectContaining({
+          code: ERROR_CODES.IMAGE_RESOLUTION_TOO_LOW,
+        }),
+      });
+      expect(storageService.upload).not.toHaveBeenCalled();
+    });
+
+    it('downscales an oversized image to the max dimension, preserving aspect ratio', async () => {
+      const userModel = {
+        findById: jest.fn().mockResolvedValue({ photos: [] }),
+        findByIdAndUpdate: jest.fn().mockResolvedValue(undefined),
+      };
+      const storageService = makeStorageService();
+      let uploadedBuffer: Buffer | undefined;
+      storageService.upload.mockImplementation(
+        async (_key: string, buffer: Buffer) => {
+          uploadedBuffer = buffer;
+          return `${publicUrl}/users/${userId}/big.jpg`;
+        },
+      );
+      const service = new UploadService(
+        userModel as never,
+        storageService as never,
+      );
+
+      await service.uploadPhotos(userId, [
+        makeFile(await makeImage(3000, 1500)),
+      ]);
+
+      const metadata = await sharp(uploadedBuffer).metadata();
+      expect(metadata.width).toBe(2048);
+      expect(metadata.height).toBe(1024);
+    });
+
+    it('does not upscale an image smaller than the max dimension', async () => {
+      const userModel = {
+        findById: jest.fn().mockResolvedValue({ photos: [] }),
+        findByIdAndUpdate: jest.fn().mockResolvedValue(undefined),
+      };
+      const storageService = makeStorageService();
+      let uploadedBuffer: Buffer | undefined;
+      storageService.upload.mockImplementation(
+        async (_key: string, buffer: Buffer) => {
+          uploadedBuffer = buffer;
+          return `${publicUrl}/users/${userId}/small.jpg`;
+        },
+      );
+      const service = new UploadService(
+        userModel as never,
+        storageService as never,
+      );
+
+      await service.uploadPhotos(userId, [makeFile(await makeImage(500, 400))]);
+
+      const metadata = await sharp(uploadedBuffer).metadata();
+      expect(metadata.width).toBe(500);
+      expect(metadata.height).toBe(400);
+    });
+
+    it('normalizes non-JPEG input (PNG, animated GIF) to JPEG output', async () => {
+      const userModel = {
+        findById: jest.fn().mockResolvedValue({ photos: [] }),
+        findByIdAndUpdate: jest.fn().mockResolvedValue(undefined),
+      };
+      const storageService = makeStorageService();
+      const uploadedBuffers: Buffer[] = [];
+      storageService.upload.mockImplementation(
+        async (_key: string, buffer: Buffer) => {
+          uploadedBuffers.push(buffer);
+          return `${publicUrl}/users/${userId}/converted.jpg`;
+        },
+      );
+      const service = new UploadService(
+        userModel as never,
+        storageService as never,
+      );
+
+      await service.uploadPhotos(userId, [
+        makeFile(await makeImage(400, 400, 'png'), 'photo.png', 'image/png'),
+        makeFile(await makeImage(400, 400, 'gif'), 'photo.gif', 'image/gif'),
+      ]);
+
+      for (const buffer of uploadedBuffers) {
+        const metadata = await sharp(buffer).metadata();
+        expect(metadata.format).toBe('jpeg');
+      }
+    });
+
+    it('strips EXIF metadata from the stored image', async () => {
+      const userModel = {
+        findById: jest.fn().mockResolvedValue({ photos: [] }),
+        findByIdAndUpdate: jest.fn().mockResolvedValue(undefined),
+      };
+      const storageService = makeStorageService();
+      let uploadedBuffer: Buffer | undefined;
+      storageService.upload.mockImplementation(
+        async (_key: string, buffer: Buffer) => {
+          uploadedBuffer = buffer;
+          return `${publicUrl}/users/${userId}/clean.jpg`;
+        },
+      );
+      const service = new UploadService(
+        userModel as never,
+        storageService as never,
+      );
+      const withExif = await sharp({
+        create: {
+          width: 400,
+          height: 400,
+          channels: 3,
+          background: { r: 10, g: 10, b: 10 },
+        },
+      })
+        .withExifMerge({ IFD0: { Copyright: 'someone' } })
+        .jpeg()
+        .toBuffer();
+
+      await service.uploadPhotos(userId, [makeFile(withExif)]);
+
+      const metadata = await sharp(uploadedBuffer).metadata();
+      expect(metadata.exif).toBeUndefined();
     });
   });
 

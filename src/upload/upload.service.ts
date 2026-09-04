@@ -5,13 +5,17 @@ import {
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { extname } from 'path';
+import sharp from 'sharp';
 import { v4 as uuidv4 } from 'uuid';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { ERROR_CODES } from '../core/http/error-codes';
 import { StorageService } from '../storage/storage.service';
 
 const MAX_PHOTOS = 5;
+const MIN_DIMENSION_PX = 200;
+const MAX_DIMENSION_PX = 2048;
+const JPEG_QUALITY = 85;
+const OUTPUT_CONTENT_TYPE = 'image/jpeg';
 
 @Injectable()
 export class UploadService {
@@ -42,14 +46,20 @@ export class UploadService {
       });
     }
 
+    // Validated and re-encoded before anything reaches storage: an invalid
+    // file rejects the whole request without leaving orphan objects behind.
+    const processedPhotos = await Promise.all(
+      photos.map((photo) => this.processImage(photo)),
+    );
+
     const uploadedUrls: string[] = [];
     try {
-      for (const photo of photos) {
-        const key = `users/${userId}/${uuidv4()}${extname(photo.originalname)}`;
+      for (const buffer of processedPhotos) {
+        const key = `users/${userId}/${uuidv4()}.jpg`;
         const url = await this.storageService.upload(
           key,
-          photo.buffer,
-          photo.mimetype,
+          buffer,
+          OUTPUT_CONTENT_TYPE,
         );
         uploadedUrls.push(url);
       }
@@ -73,6 +83,56 @@ export class UploadService {
     return {
       photos: uploadedUrls,
     };
+  }
+
+  private async processImage(file: Express.Multer.File): Promise<Buffer> {
+    let width: number | undefined;
+    let height: number | undefined;
+    try {
+      ({ width, height } = await sharp(file.buffer).metadata());
+    } catch {
+      throw new BadRequestException({
+        message: 'File is not a valid image',
+        code: ERROR_CODES.INVALID_IMAGE,
+      });
+    }
+
+    if (!width || !height) {
+      throw new BadRequestException({
+        message: 'File is not a valid image',
+        code: ERROR_CODES.INVALID_IMAGE,
+      });
+    }
+
+    if (width < MIN_DIMENSION_PX || height < MIN_DIMENSION_PX) {
+      throw new BadRequestException({
+        message: `Image must be at least ${MIN_DIMENSION_PX}x${MIN_DIMENSION_PX}px`,
+        code: ERROR_CODES.IMAGE_RESOLUTION_TOO_LOW,
+      });
+    }
+
+    try {
+      // .rotate() with no args bakes the EXIF orientation into the pixels
+      // before re-encoding strips all metadata (including that same EXIF
+      // data) — otherwise a photo taken on its side would render sideways
+      // once the orientation hint is gone. Re-encoding to a single format
+      // also flattens animated GIFs down to their first frame.
+      return await sharp(file.buffer)
+        .rotate()
+        .resize({
+          width: MAX_DIMENSION_PX,
+          height: MAX_DIMENSION_PX,
+          fit: 'inside',
+          withoutEnlargement: true,
+        })
+        .jpeg({ quality: JPEG_QUALITY })
+        .toBuffer();
+    } catch {
+      throw new BadRequestException({
+        message: 'File is not a valid image',
+        code: ERROR_CODES.INVALID_IMAGE,
+      });
+    }
   }
 
   private async rollbackUploads(urls: string[]): Promise<void> {
