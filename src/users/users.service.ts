@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { Like, LikeDocument } from '../match/schemas/like.schema';
+import { Match, MatchDocument } from '../match/schemas/match.schema';
 import { Model, PipelineStage, Types } from 'mongoose';
 import {
   UpdateProfileDto,
@@ -30,6 +31,7 @@ export class UsersService {
   constructor(
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Like.name) private likeModel: Model<LikeDocument>,
+    @InjectModel(Match.name) private matchModel: Model<MatchDocument>,
   ) {}
 
   async findAll(): Promise<User[]> {
@@ -41,7 +43,7 @@ export class UsersService {
     page: number = 1,
     limit: number = 10,
   ): Promise<{
-    users: (User & { liked: boolean })[];
+    users: User[];
     total: number;
     page: number;
     totalPages: number;
@@ -57,18 +59,76 @@ export class UsersService {
       };
     }
 
-    const genderFilter: Record<string, unknown> = {
-      _id: { $ne: new Types.ObjectId(currentUserId) },
+    const currentUserObjectId = new Types.ObjectId(currentUserId);
+
+    const [likedUserIds, matches] = await Promise.all([
+      this.likeModel
+        .find({ userId: currentUserObjectId })
+        .distinct('likedUserId')
+        .exec(),
+      this.matchModel
+        .find({
+          $or: [{ user1: currentUserObjectId }, { user2: currentUserObjectId }],
+        })
+        .exec(),
+    ]);
+
+    const matchedUserIds = matches.map((match) =>
+      match.user1.equals(currentUserObjectId) ? match.user2 : match.user1,
+    );
+
+    const excludedUserIds = [
+      currentUserObjectId,
+      ...likedUserIds,
+      ...matchedUserIds,
+    ];
+
+    const { minAge, maxAge, genders, maxDistance } =
+      currentUser.searchPreferences ?? {};
+
+    const matchFilter: Record<string, unknown> = {
+      _id: { $nin: excludedUserIds },
+      isActive: true,
     };
 
-    if (currentUser.gender === 'male') {
-      genderFilter.gender = 'female';
+    if (genders && genders.length > 0) {
+      matchFilter.gender = { $in: genders };
+    } else if (currentUser.gender === 'male') {
+      matchFilter.gender = 'female';
     } else if (currentUser.gender === 'female') {
-      genderFilter.gender = 'male';
+      matchFilter.gender = 'male';
     }
 
-    const pipeline: PipelineStage[] = [
-      { $match: genderFilter },
+    if (typeof minAge === 'number' || typeof maxAge === 'number') {
+      matchFilter.age = {
+        ...(typeof minAge === 'number' ? { $gte: minAge } : {}),
+        ...(typeof maxAge === 'number' ? { $lte: maxAge } : {}),
+      };
+    }
+
+    const searchCoordinates =
+      currentUser.coordinates && currentUser.coordinates.length >= 2
+        ? ([currentUser.coordinates[0], currentUser.coordinates[1]] as [
+            number,
+            number,
+          ])
+        : undefined;
+
+    const pipeline: PipelineStage[] = searchCoordinates
+      ? [
+          {
+            $geoNear: {
+              near: { type: 'Point' as const, coordinates: searchCoordinates },
+              distanceField: 'distance',
+              maxDistance: (maxDistance ?? 50) * 1000,
+              spherical: true,
+              query: matchFilter,
+            },
+          },
+        ]
+      : [{ $match: matchFilter }, { $sort: { _id: -1 as const } }];
+
+    pipeline.push(
       {
         $lookup: {
           from: 'interests',
@@ -89,46 +149,20 @@ export class UsersService {
         },
       },
       {
-        $lookup: {
-          from: 'likes',
-          let: { userId: '$_id' },
-          pipeline: [
-            {
-              $match: {
-                $expr: {
-                  $and: [
-                    { $eq: ['$userId', new Types.ObjectId(currentUserId)] },
-                    { $eq: ['$likedUserId', '$$userId'] },
-                  ],
-                },
-              },
-            },
-          ],
-          as: 'userLikes',
-        },
-      },
-      {
-        $addFields: {
-          liked: { $gt: [{ $size: '$userLikes' }, 0] },
-        },
-      },
-      {
         $project: {
           phone: 0,
           __v: 0,
           created_at: 0,
           updated_at: 0,
-          userLikes: 0,
         },
       },
-      { $sort: { _id: -1 as const } },
       {
         $facet: {
           users: [{ $skip: (page - 1) * limit }, { $limit: limit }],
           totalCount: [{ $count: 'count' }],
         },
       },
-    ];
+    );
 
     const [result] = await this.userModel.aggregate(pipeline).exec();
 
