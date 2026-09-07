@@ -2,6 +2,13 @@ import { NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { DialogService } from './dialog.service';
 
+function createBlockService() {
+  return {
+    isBlocked: jest.fn().mockResolvedValue(false),
+    getBlockedCounterpartIds: jest.fn().mockResolvedValue([]),
+  };
+}
+
 describe('DialogService message access', () => {
   const dialogId = '507f1f77bcf86cd799439013';
   const senderId = '507f1f77bcf86cd799439011';
@@ -16,6 +23,7 @@ describe('DialogService message access', () => {
       messageModel as never,
       {} as never,
       {} as never,
+      createBlockService() as never,
     );
 
     await expect(
@@ -47,6 +55,7 @@ describe('DialogService creation access', () => {
       {} as never,
       matchModel as never,
       {} as never,
+      createBlockService() as never,
     );
 
     await expect(service.createDialog(matchId, userId)).rejects.toThrow(
@@ -77,6 +86,7 @@ describe('DialogService creation access', () => {
       {} as never,
       matchModel as never,
       {} as never,
+      createBlockService() as never,
     );
 
     await expect(service.createDialog(matchId, userId)).resolves.toBe(
@@ -126,6 +136,7 @@ describe('DialogService.getMessages (cursor pagination)', () => {
       messageModel as never,
       {} as never,
       {} as never,
+      createBlockService() as never,
     );
 
     await expect(
@@ -138,7 +149,11 @@ describe('DialogService.getMessages (cursor pagination)', () => {
 
   it("returns a page in ascending order, flags the caller's own messages, and reports hasMore from the extra row", async () => {
     const dialogModel = {
-      findOne: jest.fn().mockResolvedValue({ _id: dialogId }),
+      findOne: jest.fn().mockResolvedValue({
+        _id: dialogId,
+        user1: new Types.ObjectId(userId),
+        user2: new Types.ObjectId('507f1f77bcf86cd799439099'),
+      }),
     };
     const docs = [
       makeMessageDoc('507f1f77bcf86cd799439033', userId),
@@ -157,6 +172,7 @@ describe('DialogService.getMessages (cursor pagination)', () => {
       messageModel as never,
       {} as never,
       encryptionService as never,
+      createBlockService() as never,
     );
 
     const result = await service.getMessages(dialogId, userId, { limit: 2 });
@@ -178,7 +194,12 @@ describe('DialogService.getMessages (cursor pagination)', () => {
   });
 
   it('passes the before cursor through as an _id upper bound', async () => {
-    const dialogModel = { findOne: jest.fn().mockResolvedValue({}) };
+    const dialogModel = {
+      findOne: jest.fn().mockResolvedValue({
+        user1: new Types.ObjectId(userId),
+        user2: new Types.ObjectId('507f1f77bcf86cd799439099'),
+      }),
+    };
     const chain = makeChain([]);
     const messageModel = { find: jest.fn().mockReturnValue(chain) };
     const service = new DialogService(
@@ -186,6 +207,7 @@ describe('DialogService.getMessages (cursor pagination)', () => {
       messageModel as never,
       {} as never,
       {} as never,
+      createBlockService() as never,
     );
     const before = '507f1f77bcf86cd799439099';
 
@@ -198,7 +220,12 @@ describe('DialogService.getMessages (cursor pagination)', () => {
   });
 
   it('reports hasMore false and a null cursor when the page is not full', async () => {
-    const dialogModel = { findOne: jest.fn().mockResolvedValue({}) };
+    const dialogModel = {
+      findOne: jest.fn().mockResolvedValue({
+        user1: new Types.ObjectId(userId),
+        user2: new Types.ObjectId('507f1f77bcf86cd799439099'),
+      }),
+    };
     const docs = [makeMessageDoc('507f1f77bcf86cd799439033', userId)];
     const chain = makeChain(docs);
     const messageModel = { find: jest.fn().mockReturnValue(chain) };
@@ -208,6 +235,7 @@ describe('DialogService.getMessages (cursor pagination)', () => {
       messageModel as never,
       {} as never,
       encryptionService as never,
+      createBlockService() as never,
     );
 
     const result = await service.getMessages(dialogId, userId, { limit: 30 });

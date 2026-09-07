@@ -9,6 +9,8 @@ import { MatchModule } from './match/match.module';
 import { DialogModule } from './dialog/dialog.module';
 import { UploadModule } from './upload/upload.module';
 import { ReferenceModule } from './reference/reference.module';
+import { BlockModule } from './block/block.module';
+import { ReportModule } from './report/report.module';
 
 import { RedisModule } from '@liaoliaots/nestjs-redis';
 import { LikeMongoModule } from './match/schemas/like.schema';
@@ -58,6 +60,8 @@ import { RevalidateModule } from 'nestjs-revalidate';
     MatchModule,
     UploadModule,
     ReferenceModule,
+    BlockModule,
+    ReportModule,
     LikeMongoModule,
     MatchMongoModule,
     DialogMongoModule,

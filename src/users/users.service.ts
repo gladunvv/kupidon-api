@@ -3,6 +3,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { Like, LikeDocument } from '../match/schemas/like.schema';
 import { Match, MatchDocument } from '../match/schemas/match.schema';
+import { BlockService } from '../block/block.service';
 import { Model, PipelineStage, Types } from 'mongoose';
 import {
   UpdateProfileDto,
@@ -32,6 +33,7 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Like.name) private likeModel: Model<LikeDocument>,
     @InjectModel(Match.name) private matchModel: Model<MatchDocument>,
+    private readonly blockService: BlockService,
   ) {}
 
   async findAll(): Promise<User[]> {
@@ -61,7 +63,7 @@ export class UsersService {
 
     const currentUserObjectId = new Types.ObjectId(currentUserId);
 
-    const [likedUserIds, matches] = await Promise.all([
+    const [likedUserIds, matches, blockedUserIds] = await Promise.all([
       this.likeModel
         .find({ userId: currentUserObjectId })
         .distinct('likedUserId')
@@ -71,6 +73,7 @@ export class UsersService {
           $or: [{ user1: currentUserObjectId }, { user2: currentUserObjectId }],
         })
         .exec(),
+      this.blockService.getBlockedCounterpartIds(currentUserObjectId),
     ]);
 
     const matchedUserIds = matches.map((match) =>
@@ -81,6 +84,7 @@ export class UsersService {
       currentUserObjectId,
       ...likedUserIds,
       ...matchedUserIds,
+      ...blockedUserIds,
     ];
 
     const { minAge, maxAge, genders, maxDistance } =
@@ -310,6 +314,10 @@ export class UsersService {
       throw new NotFoundException('No coordinates available for search');
     }
 
+    const currentUserObjectId = new Types.ObjectId(currentUserId);
+    const blockedUserIds =
+      await this.blockService.getBlockedCounterpartIds(currentUserObjectId);
+
     const pipeline: PipelineStage[] = [
       {
         $geoNear: {
@@ -321,7 +329,7 @@ export class UsersService {
           maxDistance: maxDistance * 1000,
           spherical: true,
           query: {
-            _id: { $ne: new Types.ObjectId(currentUserId) },
+            _id: { $ne: currentUserObjectId, $nin: blockedUserIds },
             isActive: true,
             coordinates: { $exists: true },
           },
@@ -366,6 +374,15 @@ export class UsersService {
   }
 
   async calculateCompatibility(userId1: string, userId2: string) {
+    const isBlocked = await this.blockService.isBlocked(
+      new Types.ObjectId(userId1),
+      new Types.ObjectId(userId2),
+    );
+
+    if (isBlocked) {
+      throw new NotFoundException('One or both users not found');
+    }
+
     const [user1, user2] = await Promise.all([
       this.getFullProfile(userId1),
       this.getFullProfile(userId2),

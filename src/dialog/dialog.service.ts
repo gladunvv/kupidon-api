@@ -13,6 +13,7 @@ import { Message, MessageDocument } from './schemas/message.schema';
 import { Match, MatchDocument } from '../match/schemas/match.schema';
 import { StatusMessage } from './schemas/message.schema';
 import { EncryptionService } from '../encryption/encryption.service';
+import { BlockService } from '../block/block.service';
 
 const PARTNER_FIELDS_FULL = { name: 1, age: 1, photos: 1, about: 1 };
 const PARTNER_FIELDS_LIST = {
@@ -30,6 +31,7 @@ export class DialogService {
     @InjectModel(Match.name)
     private readonly matchModel: Model<MatchDocument>,
     private readonly encryptionService: EncryptionService,
+    private readonly blockService: BlockService,
   ) {}
 
   async getDialog(dialogId: string) {
@@ -45,11 +47,14 @@ export class DialogService {
   async getDialogWithPartner(dialogId: string, userId: string) {
     const userObjectId = new Types.ObjectId(userId);
     const dialogObjectId = new Types.ObjectId(dialogId);
+    const blockedUserIds =
+      await this.blockService.getBlockedCounterpartIds(userObjectId);
 
     const dialogs = await this.dialogModel
       .aggregate([
         activeDialogMatch(dialogObjectId, userObjectId),
         addPartnerId(userObjectId),
+        { $match: { partnerId: { $nin: blockedUserIds } } },
         lookupPartnerUser(PARTNER_FIELDS_FULL),
         {
           $project: {
@@ -89,6 +94,13 @@ export class DialogService {
       isActive: true,
     });
     if (!dialog) {
+      throw new NotFoundException('Dialog not found or access denied');
+    }
+
+    const partnerId = dialog.user1.equals(userObjectId)
+      ? dialog.user2
+      : dialog.user1;
+    if (await this.blockService.isBlocked(userObjectId, partnerId)) {
       throw new NotFoundException('Dialog not found or access denied');
     }
 
@@ -145,6 +157,13 @@ export class DialogService {
       throw new NotFoundException('Dialog not found or access denied');
     }
 
+    const partnerId = dialog.user1.equals(senderObjectId)
+      ? dialog.user2
+      : dialog.user1;
+    if (await this.blockService.isBlocked(senderObjectId, partnerId)) {
+      throw new NotFoundException('Dialog not found or access denied');
+    }
+
     const encryptedText = this.encryptionService.encrypt(text);
 
     const message = new this.messageModel({
@@ -186,6 +205,13 @@ export class DialogService {
       $or: [{ user1: userObjectId }, { user2: userObjectId }],
     });
     if (!match) {
+      throw new NotFoundException('Match not found or access denied');
+    }
+
+    const partnerId = match.user1.equals(userObjectId)
+      ? match.user2
+      : match.user1;
+    if (await this.blockService.isBlocked(userObjectId, partnerId)) {
       throw new NotFoundException('Match not found or access denied');
     }
 

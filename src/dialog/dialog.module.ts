@@ -6,6 +6,7 @@ import { DialogMongoModule } from './schemas/dialog.schema';
 import { MessageMongoModule } from './schemas/message.schema';
 import { MatchMongoModule } from '../match/schemas/match.schema';
 import { EncryptionModule } from '../encryption/encryption.module';
+import { BlockModule } from '../block/block.module';
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { EncryptionModule } from '../encryption/encryption.module';
     MessageMongoModule,
     MatchMongoModule,
     EncryptionModule,
+    BlockModule,
   ],
   providers: [DialogService, ChatGateway],
   controllers: [DialogController],

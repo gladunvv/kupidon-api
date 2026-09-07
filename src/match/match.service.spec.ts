@@ -2,9 +2,36 @@ import { NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { MatchService } from './match.service';
 
+function createBlockService() {
+  return {
+    isBlocked: jest.fn().mockResolvedValue(false),
+    getBlockedCounterpartIds: jest.fn().mockResolvedValue([]),
+  };
+}
+
 describe('MatchService one-sided like', () => {
   const firstUserId = '507f1f77bcf86cd799439011';
   const secondUserId = '507f191e810c19729de860ea';
+
+  it('rejects a like between blocked users without recording it', async () => {
+    const likeModel = { updateOne: jest.fn(), findOne: jest.fn() };
+    const matchModel = { findOneAndUpdate: jest.fn() };
+    const dialogModel = { findOneAndUpdate: jest.fn() };
+    const blockService = createBlockService();
+    blockService.isBlocked.mockResolvedValue(true);
+    const service = new MatchService(
+      likeModel as never,
+      matchModel as never,
+      {} as never,
+      dialogModel as never,
+      blockService as never,
+    );
+
+    await expect(service.likeUser(firstUserId, secondUserId)).rejects.toThrow(
+      new NotFoundException('User not found'),
+    );
+    expect(likeModel.updateOne).not.toHaveBeenCalled();
+  });
 
   it('records the like but does not create a match or dialog without reciprocity', async () => {
     const likeModel = {
@@ -18,6 +45,7 @@ describe('MatchService one-sided like', () => {
       matchModel as never,
       {} as never,
       dialogModel as never,
+      createBlockService() as never,
     );
 
     const result = await service.likeUser(firstUserId, secondUserId);
@@ -45,6 +73,7 @@ describe('MatchService match details access', () => {
       matchModel as never,
       {} as never,
       {} as never,
+      createBlockService() as never,
     );
 
     await expect(service.getMatchDetails(matchId, userId)).rejects.toThrow(
@@ -57,6 +86,40 @@ describe('MatchService match details access', () => {
         { user2: new Types.ObjectId(userId) },
       ],
     });
+  });
+
+  it('hides match details when the counterpart is blocked', async () => {
+    const partnerId = new Types.ObjectId();
+    const match = {
+      _id: new Types.ObjectId(matchId),
+      user1: new Types.ObjectId(userId),
+      user2: partnerId,
+    };
+    const matchModel = {
+      findOne: jest.fn().mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(match),
+      }),
+    };
+    const dialogModel = { findOne: jest.fn() };
+    const blockService = createBlockService();
+    blockService.isBlocked.mockResolvedValue(true);
+    const service = new MatchService(
+      {} as never,
+      matchModel as never,
+      {} as never,
+      dialogModel as never,
+      blockService as never,
+    );
+
+    await expect(service.getMatchDetails(matchId, userId)).rejects.toThrow(
+      new NotFoundException('Match not found or access denied'),
+    );
+    expect(blockService.isBlocked).toHaveBeenCalledWith(
+      new Types.ObjectId(userId),
+      partnerId,
+    );
+    expect(dialogModel.findOne).not.toHaveBeenCalled();
   });
 });
 
@@ -82,6 +145,7 @@ describe('MatchService relationship uniqueness', () => {
       matchModel as never,
       {} as never,
       dialogModel as never,
+      createBlockService() as never,
     );
 
     const results = await Promise.all([
@@ -138,6 +202,7 @@ describe('MatchService relationship uniqueness', () => {
       matchModel as never,
       {} as never,
       dialogModel as never,
+      createBlockService() as never,
     );
 
     await expect(service.likeUser(firstUserId, secondUserId)).rejects.toThrow(
