@@ -9,6 +9,8 @@ import {
   Message,
   MessageDocument,
 } from '../../src/dialog/schemas/message.schema';
+import { BlockService } from '../../src/block/block.service';
+import { Block, BlockDocument } from '../../src/block/schemas/block.schema';
 import {
   createMongoTestingModule,
   clearCollections,
@@ -31,12 +33,17 @@ describe('MatchService concurrent match creation (real MongoDB)', () => {
       getModelToken(Message.name),
     );
     dialogModel = moduleRef.get(getModelToken(Dialog.name));
+    const blockModel = moduleRef.get<Model<BlockDocument>>(
+      getModelToken(Block.name),
+    );
+    const blockService = new BlockService(blockModel);
 
     matchService = new MatchService(
       likeModel,
       matchModel,
       messageModel,
       dialogModel,
+      blockService,
     );
   });
 

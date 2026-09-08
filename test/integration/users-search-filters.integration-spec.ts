@@ -5,6 +5,8 @@ import { UsersService } from '../../src/users/users.service';
 import { User, UserDocument } from '../../src/users/schemas/user.schema';
 import { Like, LikeDocument } from '../../src/match/schemas/like.schema';
 import { Match, MatchDocument } from '../../src/match/schemas/match.schema';
+import { BlockService } from '../../src/block/block.service';
+import { Block, BlockDocument } from '../../src/block/schemas/block.schema';
 import {
   createMongoTestingModule,
   clearCollections,
@@ -23,8 +25,17 @@ describe('UsersService.findUsersForMatching search filters (real MongoDB)', () =
     userModel = moduleRef.get(getModelToken(User.name));
     likeModel = moduleRef.get(getModelToken(Like.name));
     matchModel = moduleRef.get(getModelToken(Match.name));
+    const blockModel = moduleRef.get<Model<BlockDocument>>(
+      getModelToken(Block.name),
+    );
+    const blockService = new BlockService(blockModel);
 
-    usersService = new UsersService(userModel, likeModel, matchModel);
+    usersService = new UsersService(
+      userModel,
+      likeModel,
+      matchModel,
+      blockService,
+    );
   });
 
   afterEach(async () => {
