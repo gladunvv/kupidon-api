@@ -20,6 +20,10 @@ import {
   Message,
   MessageMongoModule,
 } from '../../../src/dialog/schemas/message.schema';
+import {
+  Block,
+  BlockMongoModule,
+} from '../../../src/block/schemas/block.schema';
 import { integrationConfig } from './config';
 
 export const INTEGRATION_MONGODB_URI =
@@ -39,13 +43,14 @@ export async function createMongoTestingModule(): Promise<TestingModule> {
       MatchMongoModule,
       DialogMongoModule,
       MessageMongoModule,
+      BlockMongoModule,
     ],
   }).compile();
 
   await moduleRef.init();
 
   await Promise.all(
-    [User, Like, Match, Dialog, Message].map((entity) =>
+    [User, Like, Match, Dialog, Message, Block].map((entity) =>
       moduleRef.get(getModelToken(entity.name)).init(),
     ),
   );

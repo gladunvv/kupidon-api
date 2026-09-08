@@ -5,6 +5,7 @@ import { DialogMongoModule } from '../dialog/schemas/dialog.schema';
 import { MatchMongoModule } from './schemas/match.schema';
 import { LikeMongoModule } from './schemas/like.schema';
 import { MessageMongoModule } from '../dialog/schemas/message.schema';
+import { BlockModule } from '../block/block.module';
 
 @Module({
   imports: [
@@ -12,6 +13,7 @@ import { MessageMongoModule } from '../dialog/schemas/message.schema';
     MatchMongoModule,
     DialogMongoModule,
     MessageMongoModule,
+    BlockModule,
   ],
   providers: [MatchService],
   controllers: [MatchController],

@@ -11,6 +11,7 @@ import { Like, LikeDocument } from './schemas/like.schema';
 import { Match, MatchDocument } from './schemas/match.schema';
 import { Dialog, DialogDocument } from '../dialog/schemas/dialog.schema';
 import { Message, MessageDocument } from '../dialog/schemas/message.schema';
+import { BlockService } from '../block/block.service';
 
 const PARTNER_FIELDS = { name: 1, age: 1, photos: 1, about: 1 };
 
@@ -23,11 +24,16 @@ export class MatchService {
     private readonly messageModel: Model<MessageDocument>,
     @InjectModel(Dialog.name)
     private readonly dialogModel: Model<DialogDocument>,
+    private readonly blockService: BlockService,
   ) {}
 
   async likeUser(userId: string, likedUserId: string) {
     const userObjectId = new Types.ObjectId(userId);
     const likedUserObjectId = new Types.ObjectId(likedUserId);
+
+    if (await this.blockService.isBlocked(userObjectId, likedUserObjectId)) {
+      throw new NotFoundException('User not found');
+    }
 
     await this.likeModel.updateOne(
       { userId: userObjectId, likedUserId: likedUserObjectId },
@@ -94,11 +100,14 @@ export class MatchService {
 
   async getUserMatches(userId: string) {
     const userObjectId = new Types.ObjectId(userId);
+    const blockedUserIds =
+      await this.blockService.getBlockedCounterpartIds(userObjectId);
 
     return this.matchModel
       .aggregate([
         matchesForUserMatch(userObjectId),
         addPartnerId(userObjectId),
+        { $match: { partnerId: { $nin: blockedUserIds } } },
         lookupPartnerUser(PARTNER_FIELDS),
         {
           $lookup: {
@@ -149,7 +158,14 @@ export class MatchService {
       throw new NotFoundException('Match not found or access denied');
     }
 
-    const partner = this.partnerFromMatch(match, userObjectId);
+    const partner = this.partnerFromMatch(match, userObjectId) as
+      | Types.ObjectId
+      | { _id: Types.ObjectId };
+    const partnerId = partner instanceof Types.ObjectId ? partner : partner._id;
+
+    if (await this.blockService.isBlocked(userObjectId, partnerId)) {
+      throw new NotFoundException('Match not found or access denied');
+    }
 
     const dialog = await this.dialogModel
       .findOne({ matchId: matchObjectId })

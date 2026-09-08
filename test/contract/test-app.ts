@@ -20,6 +20,11 @@ import { VerifyOtpDto } from '../../src/auth/dto/verify-otp.dto';
 import { AuthService } from '../../src/auth/auth.service';
 import { JwtAuthGuard } from '../../src/auth/guards/auth-guard';
 import { JwtStrategy } from '../../src/auth/jwt.strategy';
+import { BlockController } from '../../src/block/block.controller';
+import { BlockService } from '../../src/block/block.service';
+import { ReportController } from '../../src/report/report.controller';
+import { ReportService } from '../../src/report/report.service';
+import { ReportReason } from '../../src/report/schemas/report.schema';
 import { HttpExceptionFilter } from '../../src/core/http/http-exception.filter';
 import { MulterExceptionFilter } from '../../src/core/http/multer-exception.filter';
 import { ResponseInterceptor } from '../../src/core/http/response.interceptor';
@@ -416,6 +421,42 @@ class TestMatchService {
 }
 
 @Injectable()
+class TestBlockService {
+  private blocked = new Set<string>();
+
+  reset() {
+    this.blocked.clear();
+  }
+
+  async block(userId: string, targetUserId: string) {
+    if (userId === targetUserId) {
+      throw new BadRequestException('Cannot block yourself');
+    }
+    this.blocked.add(`${userId}:${targetUserId}`);
+    return { blockerId: userId, blockedId: targetUserId };
+  }
+
+  async unblock(userId: string, targetUserId: string) {
+    this.blocked.delete(`${userId}:${targetUserId}`);
+  }
+}
+
+@Injectable()
+class TestReportService {
+  async report(
+    reporterId: string,
+    reportedUserId: string,
+    reason: ReportReason,
+    details?: string,
+  ) {
+    if (reporterId === reportedUserId) {
+      throw new BadRequestException('Cannot report yourself');
+    }
+    return { reporterId, reportedUserId, reason, details };
+  }
+}
+
+@Injectable()
 class TestDialogService {
   private messageCounter = 40;
   private messages = [
@@ -730,6 +771,8 @@ export async function createTestApp() {
       DialogController,
       ReferenceController,
       UploadController,
+      BlockController,
+      ReportController,
     ],
     providers: [
       AppService,
@@ -750,12 +793,15 @@ export async function createTestApp() {
       TestUsersService,
       TestDialogService,
       TestUploadService,
+      TestBlockService,
       { provide: UsersService, useExisting: TestUsersService },
       { provide: AuthService, useClass: TestAuthService },
       { provide: MatchService, useClass: TestMatchService },
       { provide: DialogService, useExisting: TestDialogService },
       { provide: ReferenceService, useClass: TestReferenceService },
       { provide: UploadService, useExisting: TestUploadService },
+      { provide: BlockService, useExisting: TestBlockService },
+      { provide: ReportService, useClass: TestReportService },
     ],
   }).compile();
 
@@ -777,6 +823,7 @@ export async function createTestApp() {
   const users = app.get(TestUsersService);
   const dialogs = app.get(TestDialogService);
   const uploads = app.get(TestUploadService);
+  const blocks = app.get(TestBlockService);
 
   return {
     app,
@@ -784,6 +831,7 @@ export async function createTestApp() {
       users.reset();
       dialogs.reset();
       uploads.reset();
+      blocks.reset();
     },
   };
 }

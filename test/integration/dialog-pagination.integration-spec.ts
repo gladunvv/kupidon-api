@@ -11,6 +11,8 @@ import {
 } from '../../src/dialog/schemas/message.schema';
 import { Match, MatchDocument } from '../../src/match/schemas/match.schema';
 import { User, UserDocument } from '../../src/users/schemas/user.schema';
+import { BlockService } from '../../src/block/block.service';
+import { Block, BlockDocument } from '../../src/block/schemas/block.schema';
 import {
   createMongoTestingModule,
   clearCollections,
@@ -40,12 +42,17 @@ describe('DialogService message pagination (real MongoDB)', () => {
       getOrThrow: () => integrationConfig.encryption,
     } as unknown as ConfigService;
     const encryptionService = new EncryptionService(configService);
+    const blockModel = moduleRef.get<Model<BlockDocument>>(
+      getModelToken(Block.name),
+    );
+    const blockService = new BlockService(blockModel);
 
     dialogService = new DialogService(
       dialogModel,
       messageModel,
       matchModel,
       encryptionService,
+      blockService,
     );
   });
 
