@@ -5,6 +5,11 @@ import { UsersService } from '../../src/users/users.service';
 import { User, UserDocument } from '../../src/users/schemas/user.schema';
 import { Like, LikeDocument } from '../../src/match/schemas/like.schema';
 import { Match, MatchDocument } from '../../src/match/schemas/match.schema';
+import { Dialog, DialogDocument } from '../../src/dialog/schemas/dialog.schema';
+import {
+  Message,
+  MessageDocument,
+} from '../../src/dialog/schemas/message.schema';
 import { BlockService } from '../../src/block/block.service';
 import { Block, BlockDocument } from '../../src/block/schemas/block.schema';
 import {
@@ -25,6 +30,12 @@ describe('UsersService.findUsersForMatching search filters (real MongoDB)', () =
     userModel = moduleRef.get(getModelToken(User.name));
     likeModel = moduleRef.get(getModelToken(Like.name));
     matchModel = moduleRef.get(getModelToken(Match.name));
+    const dialogModel = moduleRef.get<Model<DialogDocument>>(
+      getModelToken(Dialog.name),
+    );
+    const messageModel = moduleRef.get<Model<MessageDocument>>(
+      getModelToken(Message.name),
+    );
     const blockModel = moduleRef.get<Model<BlockDocument>>(
       getModelToken(Block.name),
     );
@@ -34,7 +45,10 @@ describe('UsersService.findUsersForMatching search filters (real MongoDB)', () =
       userModel,
       likeModel,
       matchModel,
+      dialogModel,
+      messageModel,
       blockService,
+      {} as never,
     );
   });
 

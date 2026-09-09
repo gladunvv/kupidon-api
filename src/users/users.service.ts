@@ -3,7 +3,10 @@ import { InjectModel } from '@nestjs/mongoose';
 import { User, UserDocument } from './schemas/user.schema';
 import { Like, LikeDocument } from '../match/schemas/like.schema';
 import { Match, MatchDocument } from '../match/schemas/match.schema';
+import { Dialog, DialogDocument } from '../dialog/schemas/dialog.schema';
+import { Message, MessageDocument } from '../dialog/schemas/message.schema';
 import { BlockService } from '../block/block.service';
+import { StorageService } from '../storage/storage.service';
 import { Model, PipelineStage, Types } from 'mongoose';
 import {
   UpdateProfileDto,
@@ -33,7 +36,10 @@ export class UsersService {
     @InjectModel(User.name) private userModel: Model<UserDocument>,
     @InjectModel(Like.name) private likeModel: Model<LikeDocument>,
     @InjectModel(Match.name) private matchModel: Model<MatchDocument>,
+    @InjectModel(Dialog.name) private dialogModel: Model<DialogDocument>,
+    @InjectModel(Message.name) private messageModel: Model<MessageDocument>,
     private readonly blockService: BlockService,
+    private readonly storageService: StorageService,
   ) {}
 
   async findAll(): Promise<User[]> {
@@ -476,5 +482,39 @@ export class UsersService {
               ? 'Низкая совместимость'
               : 'Очень низкая совместимость',
     };
+  }
+
+  async deleteAccount(userId: string): Promise<void> {
+    const userObjectId = new Types.ObjectId(userId);
+
+    const user = await this.userModel.findById(userObjectId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    const dialogIds = await this.dialogModel
+      .find({ $or: [{ user1: userObjectId }, { user2: userObjectId }] })
+      .distinct('_id');
+
+    // Reports are kept for moderation history even after the reported or
+    // reporting account is gone, so they're deliberately not touched here.
+    await Promise.all([
+      this.messageModel.deleteMany({ dialogId: { $in: dialogIds } }),
+      this.dialogModel.deleteMany({ _id: { $in: dialogIds } }),
+      this.matchModel.deleteMany({
+        $or: [{ user1: userObjectId }, { user2: userObjectId }],
+      }),
+      this.likeModel.deleteMany({
+        $or: [{ userId: userObjectId }, { likedUserId: userObjectId }],
+      }),
+      this.blockService.unblockAll(userObjectId),
+    ]);
+
+    const photoKeys = await this.storageService.listKeys(`users/${userId}/`);
+    if (photoKeys.length > 0) {
+      await this.storageService.deleteMany(photoKeys);
+    }
+
+    await this.userModel.findByIdAndDelete(userObjectId);
   }
 }

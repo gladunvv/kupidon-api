@@ -265,6 +265,13 @@ export class TestUsersService {
     };
   }
 
+  deleteAccount(userId: string) {
+    if (!this.users.has(userId)) {
+      throw new NotFoundException('User not found');
+    }
+    this.users.delete(userId);
+  }
+
   calculateCompatibility(_userId: string, targetUserId: string) {
     if (!this.users.has(targetUserId)) {
       throw new NotFoundException('One or both users not found');
