@@ -50,6 +50,12 @@ export class BlockService {
     return Boolean(exists);
   }
 
+  async unblockAll(userId: Types.ObjectId): Promise<void> {
+    await this.blockModel.deleteMany({
+      $or: [{ blockerId: userId }, { blockedId: userId }],
+    });
+  }
+
   async getBlockedCounterpartIds(
     userId: Types.ObjectId,
   ): Promise<Types.ObjectId[]> {

@@ -232,4 +232,32 @@ describe('UsersController (contract)', () => {
     expect(response.status).toBe(404);
     expectErrorEnvelope(response.body, { code: 'NOT_FOUND' });
   });
+
+  it('DELETE /users deletes the account and invalidates the session', async () => {
+    const { agent, accessToken } = await createAuthorizedSession(getApp());
+
+    const response = await agent
+      .delete('/users')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(response.status).toBe(200);
+    expectSuccessEnvelope(response.body);
+    expect(response.headers['set-cookie']?.[0]).toMatch(/refresh_token=;/);
+
+    const profileAfterDeletion = await request(getApp().getHttpServer())
+      .get('/users')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(profileAfterDeletion.status).toBe(401);
+  });
+
+  it('DELETE /users returns 401 without auth', async () => {
+    const response = await request(getApp().getHttpServer()).delete('/users');
+
+    expect(response.status).toBe(401);
+    expectErrorEnvelope(response.body, {
+      code: 'UNAUTHORIZED',
+      message: 'Unauthorized',
+    });
+  });
 });

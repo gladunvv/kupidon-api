@@ -80,6 +80,18 @@ describe('BlockService', () => {
     ).resolves.toBe(false);
   });
 
+  it('removes every block involving the user in either direction', async () => {
+    const blockModel = { deleteMany: jest.fn().mockResolvedValue({}) };
+    const service = new BlockService(blockModel as never);
+    const target = new Types.ObjectId(userId);
+
+    await service.unblockAll(target);
+
+    expect(blockModel.deleteMany).toHaveBeenCalledWith({
+      $or: [{ blockerId: target }, { blockedId: target }],
+    });
+  });
+
   it('resolves the counterpart id regardless of block direction', async () => {
     const userObjectId = new Types.ObjectId(userId);
     const blockerCounterpart = new Types.ObjectId();

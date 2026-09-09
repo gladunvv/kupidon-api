@@ -1,12 +1,15 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Put,
   Query,
   Patch,
   Param,
+  Res,
 } from '@nestjs/common';
+import { Response } from 'express';
 import { UsersService } from './users.service';
 import {
   UpdateProfileDto,
@@ -58,6 +61,18 @@ export class UsersController {
       query.page,
       query.limit,
     );
+  }
+
+  @ApiOperation({ summary: 'Delete current user account and its data' })
+  @ResponseMessage('Account deleted successfully')
+  @Delete()
+  async deleteAccount(
+    @CurrentUser('_id') userId: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    await this.usersService.deleteAccount(userId);
+    res.clearCookie('refresh_token');
+    return null;
   }
 
   @ApiOperation({ summary: 'Update current user profile' })
