@@ -41,6 +41,8 @@ import { UploadController } from '../../src/upload/upload.controller';
 import { UploadService } from '../../src/upload/upload.service';
 import { UsersController } from '../../src/users/users.controller';
 import { UsersService } from '../../src/users/users.service';
+import { configureGlobalPrefix } from '../../src/core/http/api-prefix';
+import { paginate } from '../../src/core/http/paginated';
 
 const JWT_SECRET = 'test-secret';
 
@@ -202,7 +204,10 @@ export class TestUsersService {
   getFullProfile(userId: string) {
     const user = this.users.get(userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
     return clone(user);
   }
@@ -220,13 +225,16 @@ export class TestUsersService {
       .slice(0, limit)
       .map((user, index) => ({ ...user, liked: index === 0 }));
 
-    return { users, total: 2, page, totalPages: 1 };
+    return paginate(users, page, limit, 2);
   }
 
   updateProfile(userId: string, dto: Record<string, unknown>) {
     const user = this.users.get(userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
     Object.assign(user, dto);
     return clone(user);
@@ -235,7 +243,10 @@ export class TestUsersService {
   updateSearchPreferences(userId: string, dto: TestUser['searchPreferences']) {
     const user = this.users.get(userId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
     user.searchPreferences = { ...user.searchPreferences, ...dto };
     return clone(user);
@@ -244,7 +255,7 @@ export class TestUsersService {
   findNearbyUsers(
     _userId: string,
     coordinates?: { latitude: number; longitude: number },
-    maxDistance = 50,
+    _maxDistance = 50,
     page = 1,
     limit = 20,
   ) {
@@ -256,25 +267,26 @@ export class TestUsersService {
       throw new BadRequestException('Coordinates must be valid numbers');
     }
 
-    return {
-      users: [clone(createMatchedUser())].slice(0, limit),
-      total: 1,
-      page,
-      totalPages: 1,
-      maxDistance,
-    };
+    const users = [clone(createMatchedUser())].slice(0, limit);
+    return paginate(users, page, limit, 1);
   }
 
   deleteAccount(userId: string) {
     if (!this.users.has(userId)) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
     this.users.delete(userId);
   }
 
   calculateCompatibility(_userId: string, targetUserId: string) {
     if (!this.users.has(targetUserId)) {
-      throw new NotFoundException('One or both users not found');
+      throw new NotFoundException({
+        message: 'One or both users not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     return {
@@ -387,7 +399,10 @@ class TestAuthService {
 class TestMatchService {
   async likeUser(_userId: string, likedUserId: string) {
     if (likedUserId === testIds.missingUser) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     if (likedUserId === testIds.matchedUser) {
@@ -400,8 +415,8 @@ class TestMatchService {
     return null;
   }
 
-  async getUserMatches() {
-    return [
+  async getUserMatches(_userId: string, page = 1, limit = 20) {
+    const matches = [
       {
         _id: testIds.match,
         partner: {
@@ -412,11 +427,15 @@ class TestMatchService {
         hasDialog: true,
       },
     ];
+    return paginate(matches, page, limit, matches.length);
   }
 
   async getMatchDetails(matchId: string) {
     if (matchId !== testIds.match) {
-      throw new NotFoundException('Match not found or access denied');
+      throw new NotFoundException({
+        message: 'Match not found or access denied',
+        code: ERROR_CODES.MATCH_NOT_FOUND,
+      });
     }
 
     return {
@@ -437,7 +456,10 @@ class TestBlockService {
 
   async block(userId: string, targetUserId: string) {
     if (userId === targetUserId) {
-      throw new BadRequestException('Cannot block yourself');
+      throw new BadRequestException({
+        message: 'Cannot block yourself',
+        code: ERROR_CODES.CANNOT_TARGET_SELF,
+      });
     }
     this.blocked.add(`${userId}:${targetUserId}`);
     return { blockerId: userId, blockedId: targetUserId };
@@ -457,7 +479,10 @@ class TestReportService {
     details?: string,
   ) {
     if (reporterId === reportedUserId) {
-      throw new BadRequestException('Cannot report yourself');
+      throw new BadRequestException({
+        message: 'Cannot report yourself',
+        code: ERROR_CODES.CANNOT_TARGET_SELF,
+      });
     }
     return { reporterId, reportedUserId, reason, details };
   }
@@ -493,8 +518,8 @@ class TestDialogService {
     ];
   }
 
-  async getUserDialogs() {
-    return [
+  async getUserDialogs(_userId: string, page = 1, limit = 20) {
+    const dialogs = [
       {
         _id: testIds.dialog,
         partner: {
@@ -506,6 +531,7 @@ class TestDialogService {
         isActive: true,
       },
     ];
+    return paginate(dialogs, page, limit, dialogs.length);
   }
 
   async createDialog(matchId: string, userId: string) {
@@ -513,7 +539,10 @@ class TestDialogService {
       matchId !== testIds.match ||
       ![testIds.user, testIds.matchedUser].includes(userId)
     ) {
-      throw new NotFoundException('Match not found or access denied');
+      throw new NotFoundException({
+        message: 'Match not found or access denied',
+        code: ERROR_CODES.MATCH_NOT_FOUND,
+      });
     }
 
     return {
@@ -526,7 +555,10 @@ class TestDialogService {
 
   async getDialogWithPartner(dialogId: string) {
     if (dialogId !== testIds.dialog) {
-      throw new NotFoundException('Dialog not found or access denied');
+      throw new NotFoundException({
+        message: 'Dialog not found or access denied',
+        code: ERROR_CODES.DIALOG_NOT_FOUND,
+      });
     }
 
     return {
@@ -550,7 +582,10 @@ class TestDialogService {
       dialogId !== testIds.dialog ||
       ![testIds.user, testIds.matchedUser].includes(userId)
     ) {
-      throw new NotFoundException('Dialog not found or access denied');
+      throw new NotFoundException({
+        message: 'Dialog not found or access denied',
+        code: ERROR_CODES.DIALOG_NOT_FOUND,
+      });
     }
 
     let pool = clone(this.messages);
@@ -576,7 +611,10 @@ class TestDialogService {
       dialogId !== testIds.dialog ||
       ![testIds.user, testIds.matchedUser].includes(userId)
     ) {
-      throw new NotFoundException('Dialog not found or access denied');
+      throw new NotFoundException({
+        message: 'Dialog not found or access denied',
+        code: ERROR_CODES.DIALOG_NOT_FOUND,
+      });
     }
 
     const message = {
@@ -815,6 +853,8 @@ export async function createTestApp() {
   const app = moduleRef.createNestApplication();
   const reflector = app.get(Reflector);
 
+  configureGlobalPrefix(app);
+
   const requestLoggingMiddleware = new RequestLoggingMiddleware();
   app.use((req: Request, res: Response, next: NextFunction) =>
     requestLoggingMiddleware.use(req, res, next),
@@ -846,9 +886,9 @@ export async function createTestApp() {
 export async function createAuthorizedSession(app: INestApplication) {
   const agent = request.agent(app.getHttpServer());
 
-  await agent.post('/auth/request-otp').send({ phone: defaultPhone });
+  await agent.post('/v1/auth/request-otp').send({ phone: defaultPhone });
   const verify = await agent
-    .post('/auth/verify-otp')
+    .post('/v1/auth/verify-otp')
     .send({ phone: defaultPhone, otp: defaultOtp });
 
   const accessToken = verify.body.data.access_token as string;

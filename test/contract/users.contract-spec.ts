@@ -10,7 +10,7 @@ describe('UsersController (contract)', () => {
   const { getApp } = setupE2EApp();
 
   it('GET /users returns 401 without auth', async () => {
-    const response = await request(getApp().getHttpServer()).get('/users');
+    const response = await request(getApp().getHttpServer()).get('/v1/users');
 
     expect(response.status).toBe(401);
     expectErrorEnvelope(response.body, {
@@ -23,7 +23,7 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/users')
+      .get('/v1/users')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
@@ -40,7 +40,7 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/users/profile/complete')
+      .get('/v1/users/profile/complete')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
@@ -57,27 +57,27 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/users/list?page=1&limit=2')
+      .get('/v1/users/list?page=1&limit=2')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
     expectSuccessEnvelope(response.body);
-    expect(response.body.data).toEqual(
-      expect.objectContaining({
-        total: 2,
-        page: 1,
-        totalPages: 1,
-        users: expect.any(Array),
-      }),
-    );
-    expect(response.body.data.users).toHaveLength(2);
+    expect(response.body.data).toEqual(expect.any(Array));
+    expect(response.body.data).toHaveLength(2);
+    expect(response.body.meta.pagination).toEqual({
+      page: 1,
+      limit: 2,
+      total: 2,
+      totalPages: 1,
+      hasNext: false,
+    });
   });
 
   it('GET /users/list validates pagination query', async () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/users/list?page=0&limit=101')
+      .get('/v1/users/list?page=0&limit=101')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(400);
@@ -88,7 +88,7 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .put('/users')
+      .put('/v1/users')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         name: 'Updated Vlad',
@@ -111,7 +111,7 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .put('/users')
+      .put('/v1/users')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         age: 16,
@@ -126,7 +126,7 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .patch('/users/search-preferences')
+      .patch('/v1/users/search-preferences')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         minAge: 17,
@@ -141,7 +141,7 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .patch('/users/search-preferences')
+      .patch('/v1/users/search-preferences')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         minAge: 24,
@@ -166,16 +166,14 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/users/nearby?lat=55.75&lng=37.61&maxDistance=30')
+      .get('/v1/users/nearby?lat=55.75&lng=37.61&maxDistance=30')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
     expectSuccessEnvelope(response.body);
-    expect(response.body.data).toEqual(
-      expect.objectContaining({
-        users: expect.any(Array),
-        total: 1,
-      }),
+    expect(response.body.data).toEqual(expect.any(Array));
+    expect(response.body.meta.pagination).toEqual(
+      expect.objectContaining({ total: 1 }),
     );
   });
 
@@ -183,7 +181,7 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/users/nearby?lat=abc&limit=0')
+      .get('/v1/users/nearby?lat=abc&limit=0')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(400);
@@ -194,7 +192,7 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get(`/users/compatibility/${testIds.matchedUser}`)
+      .get(`/v1/users/compatibility/${testIds.matchedUser}`)
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
@@ -212,12 +210,12 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/users/compatibility/not-an-id')
+      .get('/v1/users/compatibility/not-an-id')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(400);
     expectErrorEnvelope(response.body, {
-      code: 'BAD_REQUEST',
+      code: 'INVALID_OBJECT_ID',
       message: 'Invalid MongoDB ObjectId',
     });
   });
@@ -226,18 +224,18 @@ describe('UsersController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get(`/users/compatibility/${testIds.missingUser}`)
+      .get(`/v1/users/compatibility/${testIds.missingUser}`)
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(404);
-    expectErrorEnvelope(response.body, { code: 'NOT_FOUND' });
+    expectErrorEnvelope(response.body, { code: 'USER_NOT_FOUND' });
   });
 
   it('DELETE /users deletes the account and invalidates the session', async () => {
     const { agent, accessToken } = await createAuthorizedSession(getApp());
 
     const response = await agent
-      .delete('/users')
+      .delete('/v1/users')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
@@ -245,14 +243,16 @@ describe('UsersController (contract)', () => {
     expect(response.headers['set-cookie']?.[0]).toMatch(/refresh_token=;/);
 
     const profileAfterDeletion = await request(getApp().getHttpServer())
-      .get('/users')
+      .get('/v1/users')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(profileAfterDeletion.status).toBe(401);
   });
 
   it('DELETE /users returns 401 without auth', async () => {
-    const response = await request(getApp().getHttpServer()).delete('/users');
+    const response = await request(getApp().getHttpServer()).delete(
+      '/v1/users',
+    );
 
     expect(response.status).toBe(401);
     expectErrorEnvelope(response.body, {

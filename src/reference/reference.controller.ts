@@ -12,9 +12,10 @@ import { HttpCache } from 'nestjs-revalidate';
 export class ReferenceController {
   constructor(private readonly referenceService: ReferenceService) {}
 
-  private listPayload<T extends { length: number }>(data: T) {
+  private listPayload<T extends { length: number }>(data: T, message: string) {
     return {
       success: true as const,
+      message,
       data,
       count: data.length,
     };
@@ -33,14 +34,14 @@ export class ReferenceController {
       search: query.search,
       limit: query.limit,
     });
-    return this.listPayload(cities);
+    return this.listPayload(cities, 'Cities retrieved successfully');
   }
 
   @ApiOperation({ summary: 'Get popular cities' })
   @Get('cities/popular')
   async getPopularCities(@Query() query?: GetCitiesQueryDto) {
     const cities = await this.referenceService.getPopularCities(query.limit);
-    return this.listPayload(cities);
+    return this.listPayload(cities, 'Popular cities retrieved successfully');
   }
 
   @ApiOperation({ summary: 'Find nearby cities by coordinates' })
@@ -52,14 +53,14 @@ export class ReferenceController {
       maxDistance: query.maxDistance || 100,
       limit: query.limit,
     });
-    return this.listPayload(cities);
+    return this.listPayload(cities, 'Nearby cities retrieved successfully');
   }
 
   @ApiOperation({ summary: 'Get interests with optional tag filter' })
   @Get('interests')
   async getInterests(@Query() query: GetInterestsQueryDto) {
     const interests = await this.referenceService.getInterests(query.tags);
-    return this.listPayload(interests);
+    return this.listPayload(interests, 'Interests retrieved successfully');
   }
 
   @ApiOperation({ summary: 'Get relationship goals' })
@@ -71,7 +72,7 @@ export class ReferenceController {
   })
   async getGoals() {
     const goals = await this.referenceService.getGoals();
-    return this.listPayload(goals);
+    return this.listPayload(goals, 'Goals retrieved successfully');
   }
 
   @ApiOperation({ summary: 'Get lifestyle categories' })
@@ -83,7 +84,10 @@ export class ReferenceController {
   })
   async getLifestyleCategories() {
     const categories = await this.referenceService.getLifestyleCategories();
-    return this.listPayload(categories);
+    return this.listPayload(
+      categories,
+      'Lifestyle categories retrieved successfully',
+    );
   }
 
   @ApiOperation({ summary: 'Get lifestyle options by category' })
@@ -93,7 +97,10 @@ export class ReferenceController {
     @Param('categoryId', ParseObjectIdPipe) categoryId: string,
   ) {
     const options = await this.referenceService.getLifestyleOptions(categoryId);
-    return this.listPayload(options);
+    return this.listPayload(
+      options,
+      'Lifestyle options retrieved successfully',
+    );
   }
 
   @ApiOperation({ summary: 'Get all lifestyle options' })
@@ -105,7 +112,10 @@ export class ReferenceController {
   })
   async getAllLifestyleOptions() {
     const options = await this.referenceService.getAllLifestyleOptions();
-    return this.listPayload(options);
+    return this.listPayload(
+      options,
+      'Lifestyle options retrieved successfully',
+    );
   }
 
   @ApiOperation({ summary: 'Get all reference data at once' })
@@ -119,6 +129,7 @@ export class ReferenceController {
     const references = await this.referenceService.getAllReferences();
     return {
       success: true as const,
+      message: 'Reference data retrieved successfully',
       data: references,
     };
   }

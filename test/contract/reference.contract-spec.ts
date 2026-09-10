@@ -8,7 +8,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/cities returns filtered cities without auth', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/cities?country=RU&limit=5',
+      '/v1/reference/cities?country=RU&limit=5',
     );
 
     expect(response.status).toBe(200);
@@ -24,7 +24,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/cities validates limit', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/cities?limit=0',
+      '/v1/reference/cities?limit=0',
     );
 
     expect(response.status).toBe(400);
@@ -33,7 +33,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/cities/popular returns popular cities', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/cities/popular?limit=1',
+      '/v1/reference/cities/popular?limit=1',
     );
 
     expect(response.status).toBe(200);
@@ -44,7 +44,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/cities/nearby returns nearby cities', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/cities/nearby?lat=55.75&lng=37.61&limit=1',
+      '/v1/reference/cities/nearby?lat=55.75&lng=37.61&limit=1',
     );
 
     expect(response.status).toBe(200);
@@ -55,7 +55,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/cities/nearby returns bad request when coordinates are missing', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/cities/nearby',
+      '/v1/reference/cities/nearby',
     );
 
     expect(response.status).toBe(400);
@@ -67,7 +67,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/interests supports tag filtering', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/interests?tags=music',
+      '/v1/reference/interests?tags=music',
     );
 
     expect(response.status).toBe(200);
@@ -79,7 +79,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/cities/nearby validates numeric query params', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/cities/nearby?lat=55.75&lng=37.61&limit=0',
+      '/v1/reference/cities/nearby?lat=55.75&lng=37.61&limit=0',
     );
 
     expect(response.status).toBe(400);
@@ -88,7 +88,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/goals returns goals', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/goals',
+      '/v1/reference/goals',
     );
 
     expect(response.status).toBe(200);
@@ -99,7 +99,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/lifestyle-categories returns categories', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/lifestyle-categories',
+      '/v1/reference/lifestyle-categories',
     );
 
     expect(response.status).toBe(200);
@@ -110,7 +110,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/lifestyle-categories/:categoryId/options returns options', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      `/reference/lifestyle-categories/${testIds.category}/options`,
+      `/v1/reference/lifestyle-categories/${testIds.category}/options`,
     );
 
     expect(response.status).toBe(200);
@@ -121,19 +121,19 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/lifestyle-categories/:categoryId/options validates object id', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/lifestyle-categories/not-an-id/options',
+      '/v1/reference/lifestyle-categories/not-an-id/options',
     );
 
     expect(response.status).toBe(400);
     expectErrorEnvelope(response.body, {
-      code: 'BAD_REQUEST',
+      code: 'INVALID_OBJECT_ID',
       message: 'Invalid MongoDB ObjectId',
     });
   });
 
   it('GET /reference/lifestyle-categories/:categoryId/options returns 404 for unknown category', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      `/reference/lifestyle-categories/${testIds.missingCategory}/options`,
+      `/v1/reference/lifestyle-categories/${testIds.missingCategory}/options`,
     );
 
     expect(response.status).toBe(404);
@@ -142,7 +142,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/lifestyle-options returns all options', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/lifestyle-options',
+      '/v1/reference/lifestyle-options',
     );
 
     expect(response.status).toBe(200);
@@ -153,7 +153,7 @@ describe('ReferenceController (contract)', () => {
 
   it('GET /reference/all returns all reference payloads', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/reference/all',
+      '/v1/reference/all',
     );
 
     expect(response.status).toBe(200);

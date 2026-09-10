@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Block, BlockDocument } from './schemas/block.schema';
+import { ERROR_CODES } from '../core/http/error-codes';
 
 @Injectable()
 export class BlockService {
@@ -11,7 +12,10 @@ export class BlockService {
 
   async block(blockerId: string, blockedId: string): Promise<Block> {
     if (blockerId === blockedId) {
-      throw new BadRequestException('Cannot block yourself');
+      throw new BadRequestException({
+        message: 'Cannot block yourself',
+        code: ERROR_CODES.CANNOT_TARGET_SELF,
+      });
     }
 
     const blockerObjectId = new Types.ObjectId(blockerId);

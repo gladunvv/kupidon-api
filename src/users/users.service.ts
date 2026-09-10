@@ -7,6 +7,8 @@ import { Dialog, DialogDocument } from '../dialog/schemas/dialog.schema';
 import { Message, MessageDocument } from '../dialog/schemas/message.schema';
 import { BlockService } from '../block/block.service';
 import { StorageService } from '../storage/storage.service';
+import { ERROR_CODES } from '../core/http/error-codes';
+import { paginate, Paginated } from '../core/http/paginated';
 import { Model, PipelineStage, Types } from 'mongoose';
 import {
   UpdateProfileDto,
@@ -50,21 +52,11 @@ export class UsersService {
     currentUserId: string,
     page: number = 1,
     limit: number = 10,
-  ): Promise<{
-    users: User[];
-    total: number;
-    page: number;
-    totalPages: number;
-  }> {
+  ): Promise<Paginated<User>> {
     const currentUser = await this.userModel.findById(currentUserId).exec();
 
     if (!currentUser) {
-      return {
-        users: [],
-        total: 0,
-        page: 1,
-        totalPages: 0,
-      };
+      return paginate([], page, limit, 0);
     }
 
     const currentUserObjectId = new Types.ObjectId(currentUserId);
@@ -178,14 +170,8 @@ export class UsersService {
 
     const users = result.users || [];
     const total = result.totalCount[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
 
-    return {
-      users,
-      total,
-      page,
-      totalPages,
-    };
+    return paginate(users, page, limit, total);
   }
 
   async findById(userId: string): Promise<User> {
@@ -238,7 +224,10 @@ export class UsersService {
     const user = await this.getFullProfile(userId);
 
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     const filledRequired = REQUIRED_PROFILE_FIELDS.filter((field) =>
@@ -300,11 +289,14 @@ export class UsersService {
     maxDistance = 50,
     page = 1,
     limit = 10,
-  ) {
+  ): Promise<Paginated<User>> {
     const currentUser = await this.userModel.findById(currentUserId).exec();
 
     if (!currentUser) {
-      throw new NotFoundException('Current user not found');
+      throw new NotFoundException({
+        message: 'Current user not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     const searchCoordinates: [number, number] | undefined = coordinates
@@ -317,7 +309,10 @@ export class UsersService {
         : undefined;
 
     if (!searchCoordinates) {
-      throw new NotFoundException('No coordinates available for search');
+      throw new NotFoundException({
+        message: 'No coordinates available for search',
+        code: ERROR_CODES.NO_COORDINATES_AVAILABLE,
+      });
     }
 
     const currentUserObjectId = new Types.ObjectId(currentUserId);
@@ -369,14 +364,8 @@ export class UsersService {
 
     const users = result.users || [];
     const total = result.totalCount[0]?.count || 0;
-    const totalPages = Math.ceil(total / limit);
 
-    return {
-      users,
-      total,
-      page,
-      totalPages,
-    };
+    return paginate(users, page, limit, total);
   }
 
   async calculateCompatibility(userId1: string, userId2: string) {
@@ -386,7 +375,10 @@ export class UsersService {
     );
 
     if (isBlocked) {
-      throw new NotFoundException('One or both users not found');
+      throw new NotFoundException({
+        message: 'One or both users not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     const [user1, user2] = await Promise.all([
@@ -395,7 +387,10 @@ export class UsersService {
     ]);
 
     if (!user1 || !user2) {
-      throw new NotFoundException('One or both users not found');
+      throw new NotFoundException({
+        message: 'One or both users not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     const factors: Array<{ name: string; score: number; details: string }> = [];
@@ -489,7 +484,10 @@ export class UsersService {
 
     const user = await this.userModel.findById(userObjectId);
     if (!user) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     const dialogIds = await this.dialogModel

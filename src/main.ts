@@ -13,6 +13,7 @@ import { ConfigService } from '@nestjs/config';
 import { ShutdownService } from './health/shutdown.service';
 import { StructuredLoggerService } from './core/logging/structured-logger.service';
 import { initSentry } from './observability/sentry';
+import { configureGlobalPrefix } from './core/http/api-prefix';
 
 // Time to let the orchestrator notice the readiness flip (via the next
 // /health/ready probe) and stop routing new traffic before the HTTP server
@@ -28,6 +29,7 @@ async function bootstrap() {
   });
   const configService = app.get(ConfigService);
   initSentry(configService.get<string>('sentry.dsn'));
+  configureGlobalPrefix(app);
 
   // Publishing the full route/DTO surface is a reconnaissance aid in
   // production; keep it available everywhere else (dev, staging, CI).
