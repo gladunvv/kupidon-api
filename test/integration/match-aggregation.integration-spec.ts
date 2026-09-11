@@ -1,6 +1,6 @@
 import { TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { MatchService } from '../../src/match/match.service';
 import { Like, LikeDocument } from '../../src/match/schemas/like.schema';
 import { Match, MatchDocument } from '../../src/match/schemas/match.schema';
@@ -77,7 +77,11 @@ describe('MatchService.getUserMatches aggregation (real MongoDB)', () => {
       isActive: true,
     });
 
-    const matches = await matchService.getUserMatches(me._id.toString());
+    const result = await matchService.getUserMatches(me._id.toString());
+    const matches = result.items as Array<{
+      partner: { _id: Types.ObjectId; name: string };
+      dialog: { hasLastMessage: boolean };
+    }>;
 
     expect(matches).toHaveLength(1);
     expect(matches[0].partner._id.toString()).toBe(partner._id.toString());
@@ -91,8 +95,8 @@ describe('MatchService.getUserMatches aggregation (real MongoDB)', () => {
     await matchModel.create({ user1: stranger1._id, user2: stranger2._id });
 
     const me = await userModel.create({ phone: '+79990005533' });
-    const matches = await matchService.getUserMatches(me._id.toString());
+    const result = await matchService.getUserMatches(me._id.toString());
 
-    expect(matches).toHaveLength(0);
+    expect(result.items).toHaveLength(0);
   });
 });

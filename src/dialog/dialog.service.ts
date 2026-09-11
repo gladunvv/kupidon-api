@@ -14,6 +14,8 @@ import { Match, MatchDocument } from '../match/schemas/match.schema';
 import { StatusMessage } from './schemas/message.schema';
 import { EncryptionService } from '../encryption/encryption.service';
 import { BlockService } from '../block/block.service';
+import { ERROR_CODES } from '../core/http/error-codes';
+import { paginate, Paginated } from '../core/http/paginated';
 
 const PARTNER_FIELDS_FULL = { name: 1, age: 1, photos: 1, about: 1 };
 const PARTNER_FIELDS_LIST = {
@@ -39,7 +41,10 @@ export class DialogService {
       .findById(dialogId)
       .populate('messages');
     if (!dialog) {
-      throw new NotFoundException('Dialog not found');
+      throw new NotFoundException({
+        message: 'Dialog not found',
+        code: ERROR_CODES.DIALOG_NOT_FOUND,
+      });
     }
     return dialog;
   }
@@ -70,7 +75,10 @@ export class DialogService {
       .exec();
 
     if (!dialogs.length) {
-      throw new NotFoundException('Dialog not found or access denied');
+      throw new NotFoundException({
+        message: 'Dialog not found or access denied',
+        code: ERROR_CODES.DIALOG_NOT_FOUND,
+      });
     }
 
     return dialogs[0];
@@ -94,14 +102,20 @@ export class DialogService {
       isActive: true,
     });
     if (!dialog) {
-      throw new NotFoundException('Dialog not found or access denied');
+      throw new NotFoundException({
+        message: 'Dialog not found or access denied',
+        code: ERROR_CODES.DIALOG_NOT_FOUND,
+      });
     }
 
     const partnerId = dialog.user1.equals(userObjectId)
       ? dialog.user2
       : dialog.user1;
     if (await this.blockService.isBlocked(userObjectId, partnerId)) {
-      throw new NotFoundException('Dialog not found or access denied');
+      throw new NotFoundException({
+        message: 'Dialog not found or access denied',
+        code: ERROR_CODES.DIALOG_NOT_FOUND,
+      });
     }
 
     const filter: Record<string, unknown> = { dialogId: dialogObjectId };
@@ -154,14 +168,20 @@ export class DialogService {
       isActive: true,
     });
     if (!dialog) {
-      throw new NotFoundException('Dialog not found or access denied');
+      throw new NotFoundException({
+        message: 'Dialog not found or access denied',
+        code: ERROR_CODES.DIALOG_NOT_FOUND,
+      });
     }
 
     const partnerId = dialog.user1.equals(senderObjectId)
       ? dialog.user2
       : dialog.user1;
     if (await this.blockService.isBlocked(senderObjectId, partnerId)) {
-      throw new NotFoundException('Dialog not found or access denied');
+      throw new NotFoundException({
+        message: 'Dialog not found or access denied',
+        code: ERROR_CODES.DIALOG_NOT_FOUND,
+      });
     }
 
     const encryptedText = this.encryptionService.encrypt(text);
@@ -186,7 +206,10 @@ export class DialogService {
       .exec();
 
     if (!populated) {
-      throw new NotFoundException('Message not found');
+      throw new NotFoundException({
+        message: 'Message not found',
+        code: ERROR_CODES.MESSAGE_NOT_FOUND,
+      });
     }
 
     return {
@@ -205,14 +228,20 @@ export class DialogService {
       $or: [{ user1: userObjectId }, { user2: userObjectId }],
     });
     if (!match) {
-      throw new NotFoundException('Match not found or access denied');
+      throw new NotFoundException({
+        message: 'Match not found or access denied',
+        code: ERROR_CODES.MATCH_NOT_FOUND,
+      });
     }
 
     const partnerId = match.user1.equals(userObjectId)
       ? match.user2
       : match.user1;
     if (await this.blockService.isBlocked(userObjectId, partnerId)) {
-      throw new NotFoundException('Match not found or access denied');
+      throw new NotFoundException({
+        message: 'Match not found or access denied',
+        code: ERROR_CODES.MATCH_NOT_FOUND,
+      });
     }
 
     return this.dialogModel.findOneAndUpdate(
@@ -229,10 +258,14 @@ export class DialogService {
     );
   }
 
-  async getUserDialogs(userId: string) {
+  async getUserDialogs(
+    userId: string,
+    page = 1,
+    limit = 20,
+  ): Promise<Paginated<unknown>> {
     const userObjectId = new Types.ObjectId(userId);
 
-    const dialogs = await this.dialogModel
+    const [result] = await this.dialogModel
       .aggregate([
         dialogsForUserMatch(userObjectId),
         addPartnerId(userObjectId),
@@ -282,13 +315,22 @@ export class DialogService {
           },
         },
         { $sort: { updated_at: -1 } },
+        {
+          $facet: {
+            dialogs: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+            totalCount: [{ $count: 'count' }],
+          },
+        },
       ])
       .exec();
 
-    return dialogs.map((dialog) => ({
+    const dialogs = (result?.dialogs ?? []).map((dialog: any) => ({
       ...dialog,
       lastMessage: this.decryptMessage(dialog.lastMessage),
     }));
+    const total = result?.totalCount[0]?.count ?? 0;
+
+    return paginate(dialogs, page, limit, total);
   }
 
   private decryptMessage(message: any) {

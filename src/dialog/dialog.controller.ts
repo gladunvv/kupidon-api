@@ -21,6 +21,7 @@ import { GetMessagesQueryDto } from './dto/get-messages-query.dto';
 import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
 import { ResponseMessage } from '../core/decorators/response-message.decorator';
 import { CurrentUser } from '../core/decorators/current-user.decorator';
+import { PaginationQueryDto } from '../core/dto/pagination-query.dto';
 
 @ApiTags('Dialogs')
 @ApiBearerAuth()
@@ -32,8 +33,11 @@ export class DialogController {
   @ApiOperation({ summary: 'Get current user dialogs' })
   @ResponseMessage('Dialogs retrieved successfully')
   @Get()
-  async getUserDialogs(@CurrentUser('_id') userId: string) {
-    return this.dialogService.getUserDialogs(userId);
+  async getUserDialogs(
+    @CurrentUser('_id') userId: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.dialogService.getUserDialogs(userId, query.page, query.limit);
   }
 
   @UseGuards(JwtAuthGuard)

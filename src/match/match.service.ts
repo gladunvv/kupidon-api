@@ -12,6 +12,8 @@ import { Match, MatchDocument } from './schemas/match.schema';
 import { Dialog, DialogDocument } from '../dialog/schemas/dialog.schema';
 import { Message, MessageDocument } from '../dialog/schemas/message.schema';
 import { BlockService } from '../block/block.service';
+import { ERROR_CODES } from '../core/http/error-codes';
+import { paginate, Paginated } from '../core/http/paginated';
 
 const PARTNER_FIELDS = { name: 1, age: 1, photos: 1, about: 1 };
 
@@ -32,7 +34,10 @@ export class MatchService {
     const likedUserObjectId = new Types.ObjectId(likedUserId);
 
     if (await this.blockService.isBlocked(userObjectId, likedUserObjectId)) {
-      throw new NotFoundException('User not found');
+      throw new NotFoundException({
+        message: 'User not found',
+        code: ERROR_CODES.USER_NOT_FOUND,
+      });
     }
 
     await this.likeModel.updateOne(
@@ -98,12 +103,16 @@ export class MatchService {
       : [secondUserId, firstUserId];
   }
 
-  async getUserMatches(userId: string) {
+  async getUserMatches(
+    userId: string,
+    page = 1,
+    limit = 20,
+  ): Promise<Paginated<unknown>> {
     const userObjectId = new Types.ObjectId(userId);
     const blockedUserIds =
       await this.blockService.getBlockedCounterpartIds(userObjectId);
 
-    return this.matchModel
+    const [result] = await this.matchModel
       .aggregate([
         matchesForUserMatch(userObjectId),
         addPartnerId(userObjectId),
@@ -135,8 +144,19 @@ export class MatchService {
           },
         },
         { $sort: { created_at: -1 } },
+        {
+          $facet: {
+            matches: [{ $skip: (page - 1) * limit }, { $limit: limit }],
+            totalCount: [{ $count: 'count' }],
+          },
+        },
       ])
       .exec();
+
+    const matches = result?.matches ?? [];
+    const total = result?.totalCount[0]?.count ?? 0;
+
+    return paginate(matches, page, limit, total);
   }
 
   async getMatchDetails(matchId: string, userId: string) {
@@ -155,7 +175,10 @@ export class MatchService {
       .exec();
 
     if (!match) {
-      throw new NotFoundException('Match not found or access denied');
+      throw new NotFoundException({
+        message: 'Match not found or access denied',
+        code: ERROR_CODES.MATCH_NOT_FOUND,
+      });
     }
 
     const partner = this.partnerFromMatch(match, userObjectId) as
@@ -164,7 +187,10 @@ export class MatchService {
     const partnerId = partner instanceof Types.ObjectId ? partner : partner._id;
 
     if (await this.blockService.isBlocked(userObjectId, partnerId)) {
-      throw new NotFoundException('Match not found or access denied');
+      throw new NotFoundException({
+        message: 'Match not found or access denied',
+        code: ERROR_CODES.MATCH_NOT_FOUND,
+      });
     }
 
     const dialog = await this.dialogModel

@@ -6,6 +6,7 @@ import {
   BadRequestException,
   Get,
   Param,
+  Query,
 } from '@nestjs/common';
 import { MatchService } from './match.service';
 import { JwtAuthGuard } from '../auth/guards/auth-guard';
@@ -19,6 +20,8 @@ import { LikeUserDto } from './dto/like-user.dto';
 import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
 import { ResponseMessage } from '../core/decorators/response-message.decorator';
 import { CurrentUser } from '../core/decorators/current-user.decorator';
+import { ERROR_CODES } from '../core/http/error-codes';
+import { PaginationQueryDto } from '../core/dto/pagination-query.dto';
 
 @ApiTags('Match')
 @ApiBearerAuth()
@@ -32,7 +35,10 @@ export class MatchController {
   @Post('like')
   async likeUser(@Body() dto: LikeUserDto, @CurrentUser('_id') userId: string) {
     if (userId === dto.likedUserId) {
-      throw new BadRequestException('Cannot like yourself');
+      throw new BadRequestException({
+        message: 'Cannot like yourself',
+        code: ERROR_CODES.CANNOT_TARGET_SELF,
+      });
     }
 
     const result = await this.matchService.likeUser(userId, dto.likedUserId);
@@ -52,8 +58,11 @@ export class MatchController {
   @ApiOperation({ summary: 'Get current user matches' })
   @ResponseMessage('Matches retrieved successfully')
   @Get()
-  async getUserMatches(@CurrentUser('_id') userId: string) {
-    return this.matchService.getUserMatches(userId);
+  async getUserMatches(
+    @CurrentUser('_id') userId: string,
+    @Query() query: PaginationQueryDto,
+  ) {
+    return this.matchService.getUserMatches(userId, query.page, query.limit);
   }
 
   @UseGuards(JwtAuthGuard)

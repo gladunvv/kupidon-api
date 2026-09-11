@@ -23,7 +23,7 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 
-import { GetUsersQueryDto } from './dto/get-users-query.dto';
+import { PaginationQueryDto } from '../core/dto/pagination-query.dto';
 import { GetNearbyUsersQueryDto } from './dto/get-nearby-users-query.dto';
 import { ParseObjectIdPipe } from '../core/pipes/parse-object-id.pipe';
 import { ResponseMessage } from '../core/decorators/response-message.decorator';
@@ -54,7 +54,7 @@ export class UsersController {
   @Get('list')
   async getUsersList(
     @CurrentUser('_id') currentUserId: string,
-    @Query() query: GetUsersQueryDto,
+    @Query() query: PaginationQueryDto,
   ) {
     return this.usersService.findUsersForMatching(
       currentUserId,

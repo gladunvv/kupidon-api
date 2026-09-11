@@ -10,6 +10,7 @@ import { ApiResponse } from '../types/api-response.interface';
 import { Reflector } from '@nestjs/core';
 import { RESPONSE_MESSAGE_KEY } from '../decorators/response-message.decorator';
 import { getRequestId } from '../logging/request-context';
+import { Paginated } from './paginated';
 
 @Injectable()
 export class ResponseInterceptor<T> implements NestInterceptor<
@@ -29,6 +30,19 @@ export class ResponseInterceptor<T> implements NestInterceptor<
 
     return next.handle().pipe(
       map((data) => {
+        if (data instanceof Paginated) {
+          return {
+            success: true,
+            message: defaultMessage,
+            data: data.items,
+            meta: {
+              timestamp: new Date().toISOString(),
+              requestId,
+              pagination: data.pagination,
+            },
+          };
+        }
+
         if (data && typeof data === 'object' && 'success' in data) {
           return {
             ...data,

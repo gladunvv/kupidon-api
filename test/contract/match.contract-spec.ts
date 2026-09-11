@@ -13,7 +13,7 @@ describe('MatchController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post('/match/like')
+      .post('/v1/match/like')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ likedUserId: testIds.pendingUser });
 
@@ -26,7 +26,7 @@ describe('MatchController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post('/match/like')
+      .post('/v1/match/like')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ likedUserId: testIds.matchedUser });
 
@@ -45,13 +45,13 @@ describe('MatchController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post('/match/like')
+      .post('/v1/match/like')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ likedUserId: testIds.user });
 
     expect(response.status).toBe(400);
     expectErrorEnvelope(response.body, {
-      code: 'BAD_REQUEST',
+      code: 'CANNOT_TARGET_SELF',
       message: 'Cannot like yourself',
     });
   });
@@ -60,7 +60,7 @@ describe('MatchController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post('/match/like')
+      .post('/v1/match/like')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ likedUserId: 'invalid-id' });
 
@@ -72,20 +72,27 @@ describe('MatchController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/match')
+      .get('/v1/match')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
     expectSuccessEnvelope(response.body);
     expect(response.body.data).toEqual(expect.any(Array));
     expect(response.body.data).toHaveLength(1);
+    expect(response.body.meta.pagination).toEqual({
+      page: 1,
+      limit: 20,
+      total: 1,
+      totalPages: 1,
+      hasNext: false,
+    });
   });
 
   it('GET /match/:matchId returns match details', async () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get(`/match/${testIds.match}`)
+      .get(`/v1/match/${testIds.match}`)
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
@@ -102,12 +109,12 @@ describe('MatchController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/match/invalid-id')
+      .get('/v1/match/invalid-id')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(400);
     expectErrorEnvelope(response.body, {
-      code: 'BAD_REQUEST',
+      code: 'INVALID_OBJECT_ID',
       message: 'Invalid MongoDB ObjectId',
     });
   });
@@ -116,10 +123,10 @@ describe('MatchController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get(`/match/${testIds.missingMatch}`)
+      .get(`/v1/match/${testIds.missingMatch}`)
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(404);
-    expectErrorEnvelope(response.body, { code: 'NOT_FOUND' });
+    expectErrorEnvelope(response.body, { code: 'MATCH_NOT_FOUND' });
   });
 });

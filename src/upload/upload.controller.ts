@@ -23,6 +23,7 @@ import { UploadPhotosDto } from './dto/upload-photos.dto';
 import { DeletePhotoDto } from './dto/delete-photos.dto';
 import { ResponseMessage } from '../core/decorators/response-message.decorator';
 import { CurrentUser } from '../core/decorators/current-user.decorator';
+import { ERROR_CODES } from '../core/http/error-codes';
 
 @ApiTags('Upload')
 @ApiBearerAuth()
@@ -41,7 +42,10 @@ export class UploadController {
     @CurrentUser('_id') userId: string,
   ) {
     if (!photos?.length) {
-      throw new BadRequestException('No photos provided');
+      throw new BadRequestException({
+        message: 'No photos provided',
+        code: ERROR_CODES.NO_PHOTOS_PROVIDED,
+      });
     }
 
     return this.uploadService.uploadPhotos(userId, photos);

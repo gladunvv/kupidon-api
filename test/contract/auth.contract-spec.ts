@@ -16,7 +16,7 @@ describe('AuthController (contract)', () => {
 
   it('POST /auth/request-otp sends OTP', async () => {
     const response = await request(getApp().getHttpServer())
-      .post('/auth/request-otp')
+      .post('/v1/auth/request-otp')
       .set('x-request-id', 'req-auth-otp')
       .send({ phone: defaultPhone });
 
@@ -30,7 +30,7 @@ describe('AuthController (contract)', () => {
 
   it('POST /auth/request-otp validates missing phone', async () => {
     const response = await request(getApp().getHttpServer())
-      .post('/auth/request-otp')
+      .post('/v1/auth/request-otp')
       .send({});
 
     expect(response.status).toBe(400);
@@ -39,7 +39,7 @@ describe('AuthController (contract)', () => {
 
   it('POST /auth/request-otp validates phone format', async () => {
     const response = await request(getApp().getHttpServer())
-      .post('/auth/request-otp')
+      .post('/v1/auth/request-otp')
       .send({ phone: '12345' });
 
     expect(response.status).toBe(400);
@@ -48,7 +48,7 @@ describe('AuthController (contract)', () => {
 
   it('POST /auth/verify-otp returns access token and refresh cookie', async () => {
     const response = await request(getApp().getHttpServer())
-      .post('/auth/verify-otp')
+      .post('/v1/auth/verify-otp')
       .send({ phone: defaultPhone, otp: defaultOtp });
 
     expect(response.status).toBe(201);
@@ -72,7 +72,7 @@ describe('AuthController (contract)', () => {
 
   it('POST /auth/verify-otp validates missing otp', async () => {
     const response = await request(getApp().getHttpServer())
-      .post('/auth/verify-otp')
+      .post('/v1/auth/verify-otp')
       .send({ phone: defaultPhone });
 
     expect(response.status).toBe(400);
@@ -81,7 +81,7 @@ describe('AuthController (contract)', () => {
 
   it('POST /auth/verify-otp returns 401 for invalid otp', async () => {
     const response = await request(getApp().getHttpServer())
-      .post('/auth/verify-otp')
+      .post('/v1/auth/verify-otp')
       .send({ phone: defaultPhone, otp: '0000' });
 
     expect(response.status).toBe(401);
@@ -94,7 +94,7 @@ describe('AuthController (contract)', () => {
   it('POST /auth/refresh-token refreshes token using cookie', async () => {
     const session = await createAuthorizedSession(getApp());
 
-    const response = await session.agent.post('/auth/refresh-token');
+    const response = await session.agent.post('/v1/auth/refresh-token');
 
     expect(response.status).toBe(201);
     expectSuccessEnvelope(response.body, {
@@ -111,7 +111,7 @@ describe('AuthController (contract)', () => {
 
   it('POST /auth/refresh-token returns 401 without cookie', async () => {
     const response = await request(getApp().getHttpServer()).post(
-      '/auth/refresh-token',
+      '/v1/auth/refresh-token',
     );
 
     expect(response.status).toBe(401);
@@ -123,7 +123,7 @@ describe('AuthController (contract)', () => {
 
   it('POST /auth/refresh-token does not expose verification details', async () => {
     const response = await request(getApp().getHttpServer())
-      .post('/auth/refresh-token')
+      .post('/v1/auth/refresh-token')
       .set('Cookie', 'refresh_token=invalid-token');
 
     expect(response.status).toBe(401);
@@ -139,7 +139,7 @@ describe('AuthController (contract)', () => {
     const session = await createAuthorizedSession(getApp());
 
     const response = await session.agent
-      .post('/auth/logout')
+      .post('/v1/auth/logout')
       .set('Authorization', `Bearer ${session.accessToken}`);
 
     expect(response.status).toBe(201);

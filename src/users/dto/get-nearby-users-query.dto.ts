@@ -1,8 +1,9 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsInt, IsOptional, Min, Max, IsNumber } from 'class-validator';
+import { PaginationQueryDto } from '../../core/dto/pagination-query.dto';
 
-export class GetNearbyUsersQueryDto {
+export class GetNearbyUsersQueryDto extends PaginationQueryDto {
   @ApiPropertyOptional({ example: 55.7558 })
   @IsOptional()
   @Type(() => Number)
@@ -22,19 +23,4 @@ export class GetNearbyUsersQueryDto {
   @Min(1)
   @Max(500)
   maxDistance?: number;
-
-  @ApiPropertyOptional({ example: 1, default: 1 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  page?: number = 1;
-
-  @ApiPropertyOptional({ example: 20, default: 20 })
-  @IsOptional()
-  @Type(() => Number)
-  @IsInt()
-  @Min(1)
-  @Max(100)
-  limit?: number = 20;
 }

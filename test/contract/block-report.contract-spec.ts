@@ -13,7 +13,7 @@ describe('BlockController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post(`/users/${testIds.matchedUser}/block`)
+      .post(`/v1/users/${testIds.matchedUser}/block`)
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(201);
@@ -24,12 +24,12 @@ describe('BlockController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post(`/users/${testIds.user}/block`)
+      .post(`/v1/users/${testIds.user}/block`)
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(400);
     expectErrorEnvelope(response.body, {
-      code: 'BAD_REQUEST',
+      code: 'CANNOT_TARGET_SELF',
       message: 'Cannot block yourself',
     });
   });
@@ -38,16 +38,16 @@ describe('BlockController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post('/users/invalid-id/block')
+      .post('/v1/users/invalid-id/block')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(400);
-    expectErrorEnvelope(response.body, { code: 'BAD_REQUEST' });
+    expectErrorEnvelope(response.body, { code: 'INVALID_OBJECT_ID' });
   });
 
   it('requires authentication', async () => {
     const response = await request(getApp().getHttpServer()).post(
-      `/users/${testIds.matchedUser}/block`,
+      `/v1/users/${testIds.matchedUser}/block`,
     );
 
     expect(response.status).toBe(401);
@@ -57,7 +57,7 @@ describe('BlockController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .delete(`/users/${testIds.matchedUser}/block`)
+      .delete(`/v1/users/${testIds.matchedUser}/block`)
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
@@ -73,7 +73,7 @@ describe('ReportController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post(`/users/${testIds.matchedUser}/report`)
+      .post(`/v1/users/${testIds.matchedUser}/report`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ reason: 'spam', details: 'Sent me a link' });
 
@@ -85,13 +85,13 @@ describe('ReportController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post(`/users/${testIds.user}/report`)
+      .post(`/v1/users/${testIds.user}/report`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ reason: 'spam' });
 
     expect(response.status).toBe(400);
     expectErrorEnvelope(response.body, {
-      code: 'BAD_REQUEST',
+      code: 'CANNOT_TARGET_SELF',
       message: 'Cannot report yourself',
     });
   });
@@ -100,7 +100,7 @@ describe('ReportController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post(`/users/${testIds.matchedUser}/report`)
+      .post(`/v1/users/${testIds.matchedUser}/report`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ reason: 'not-a-real-reason' });
 
@@ -110,7 +110,7 @@ describe('ReportController (contract)', () => {
 
   it('requires authentication', async () => {
     const response = await request(getApp().getHttpServer())
-      .post(`/users/${testIds.matchedUser}/report`)
+      .post(`/v1/users/${testIds.matchedUser}/report`)
       .send({ reason: 'spam' });
 
     expect(response.status).toBe(401);

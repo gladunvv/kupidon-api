@@ -244,3 +244,80 @@ describe('DialogService.getMessages (cursor pagination)', () => {
     expect(result.messages).toHaveLength(1);
   });
 });
+
+describe('DialogService.getUserDialogs (pagination)', () => {
+  const userId = '507f1f77bcf86cd799439011';
+
+  it('paginates dialogs and decrypts each last message', async () => {
+    const dialogWithMessage = {
+      _id: '507f1f77bcf86cd799439013',
+      lastMessage: {
+        ciphertext: 'c',
+        iv: 'i',
+        authTag: 't',
+        keyVersion: 1,
+        sender: { _id: '507f1f77bcf86cd799439099', name: 'Anna' },
+        created_at: new Date('2024-01-01T00:00:00.000Z'),
+      },
+    };
+    const dialogWithoutMessage = {
+      _id: '507f1f77bcf86cd799439014',
+      lastMessage: null,
+    };
+    const dialogModel = {
+      aggregate: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([
+          {
+            dialogs: [dialogWithMessage, dialogWithoutMessage],
+            totalCount: [{ count: 5 }],
+          },
+        ]),
+      }),
+    };
+    const encryptionService = { decrypt: jest.fn().mockReturnValue('hi') };
+    const service = new DialogService(
+      dialogModel as never,
+      {} as never,
+      {} as never,
+      encryptionService as never,
+      createBlockService() as never,
+    );
+
+    const result = await service.getUserDialogs(userId, 1, 2);
+
+    expect(dialogModel.aggregate).toHaveBeenCalled();
+    const items = result.items as Array<{ lastMessage: unknown }>;
+    expect(items).toHaveLength(2);
+    expect(items[0].lastMessage).toEqual(
+      expect.objectContaining({ text: 'hi' }),
+    );
+    expect(items[1].lastMessage).toBeNull();
+    expect(result.pagination).toEqual({
+      page: 1,
+      limit: 2,
+      total: 5,
+      totalPages: 3,
+      hasNext: true,
+    });
+  });
+
+  it('returns an empty page when the aggregation yields no facet result', async () => {
+    const dialogModel = {
+      aggregate: jest.fn().mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
+      }),
+    };
+    const service = new DialogService(
+      dialogModel as never,
+      {} as never,
+      {} as never,
+      {} as never,
+      createBlockService() as never,
+    );
+
+    const result = await service.getUserDialogs(userId);
+
+    expect(result.items).toEqual([]);
+    expect(result.pagination.total).toBe(0);
+  });
+});

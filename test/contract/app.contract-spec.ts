@@ -10,7 +10,7 @@ describe('AppController (contract)', () => {
   const { getApp } = setupE2EApp();
 
   it('GET / returns 401 without auth', async () => {
-    const response = await request(getApp().getHttpServer()).get('/');
+    const response = await request(getApp().getHttpServer()).get('/v1');
 
     expect(response.status).toBe(401);
     expectErrorEnvelope(response.body, {
@@ -23,7 +23,7 @@ describe('AppController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/')
+      .get('/v1')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);

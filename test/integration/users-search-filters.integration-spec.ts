@@ -94,7 +94,7 @@ describe('UsersService.findUsersForMatching search filters (real MongoDB)', () =
 
     const result = await usersService.findUsersForMatching(me._id.toString());
 
-    const ids = extractIds(result.users);
+    const ids = extractIds(result.items);
     expect(ids).toContain(inRange._id.toString());
     expect(ids).not.toContain(tooYoung._id.toString());
     expect(ids).not.toContain(tooOld._id.toString());
@@ -125,7 +125,7 @@ describe('UsersService.findUsersForMatching search filters (real MongoDB)', () =
 
     const result = await usersService.findUsersForMatching(me._id.toString());
 
-    const ids = extractIds(result.users);
+    const ids = extractIds(result.items);
     expect(ids).toContain(female._id.toString());
     expect(ids).not.toContain(male._id.toString());
   });
@@ -155,7 +155,7 @@ describe('UsersService.findUsersForMatching search filters (real MongoDB)', () =
 
     const result = await usersService.findUsersForMatching(me._id.toString());
 
-    const ids = extractIds(result.users);
+    const ids = extractIds(result.items);
     expect(ids).toContain(female._id.toString());
     expect(ids).not.toContain(male._id.toString());
   });
@@ -191,7 +191,7 @@ describe('UsersService.findUsersForMatching search filters (real MongoDB)', () =
 
     const result = await usersService.findUsersForMatching(me._id.toString());
 
-    const ids = extractIds(result.users);
+    const ids = extractIds(result.items);
     expect(ids).toContain(nearby._id.toString());
     expect(ids).not.toContain(farAway._id.toString());
   });
@@ -217,7 +217,7 @@ describe('UsersService.findUsersForMatching search filters (real MongoDB)', () =
 
     const result = await usersService.findUsersForMatching(me._id.toString());
 
-    const ids = extractIds(result.users);
+    const ids = extractIds(result.items);
     expect(ids).toContain(active._id.toString());
     expect(ids).not.toContain(inactive._id.toString());
   });
@@ -254,7 +254,7 @@ describe('UsersService.findUsersForMatching search filters (real MongoDB)', () =
 
     const result = await usersService.findUsersForMatching(me._id.toString());
 
-    const ids = extractIds(result.users);
+    const ids = extractIds(result.items);
     expect(ids).toContain(untouched._id.toString());
     expect(ids).not.toContain(liked._id.toString());
     expect(ids).not.toContain(matched._id.toString());
@@ -269,6 +269,6 @@ describe('UsersService.findUsersForMatching search filters (real MongoDB)', () =
 
     const result = await usersService.findUsersForMatching(me._id.toString());
 
-    expect(extractIds(result.users)).not.toContain(me._id.toString());
+    expect(extractIds(result.items)).not.toContain(me._id.toString());
   });
 });

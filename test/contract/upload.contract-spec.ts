@@ -11,7 +11,7 @@ describe('UploadController (contract)', () => {
 
   it('GET /upload/photos returns 401 without auth', async () => {
     const response = await request(getApp().getHttpServer()).get(
-      '/upload/photos',
+      '/v1/upload/photos',
     );
 
     expect(response.status).toBe(401);
@@ -25,7 +25,7 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post('/upload/photos')
+      .post('/v1/upload/photos')
       .set('Authorization', `Bearer ${accessToken}`)
       .attach('photos', Buffer.from('first'), 'first.jpg')
       .attach('photos', Buffer.from('second'), 'second.jpg');
@@ -42,12 +42,12 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post('/upload/photos')
+      .post('/v1/upload/photos')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(400);
     expectErrorEnvelope(response.body, {
-      code: 'BAD_REQUEST',
+      code: 'NO_PHOTOS_PROVIDED',
       message: 'No photos provided',
     });
   });
@@ -56,7 +56,7 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const req = request(getApp().getHttpServer())
-      .post('/upload/photos')
+      .post('/v1/upload/photos')
       .set('Authorization', `Bearer ${accessToken}`);
 
     for (let i = 0; i < 6; i += 1) {
@@ -73,7 +73,7 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .delete('/upload/photo')
+      .delete('/v1/upload/photo')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ photoPath: '/uploads/photo-1.jpg' });
 
@@ -86,7 +86,7 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .delete('/upload/photo')
+      .delete('/v1/upload/photo')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ photoPath: '' });
 
@@ -98,7 +98,7 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .delete('/upload/photo')
+      .delete('/v1/upload/photo')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({});
 
@@ -110,7 +110,7 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .delete('/upload/photo')
+      .delete('/v1/upload/photo')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ photoPath: '/uploads/missing.jpg' });
 
@@ -122,7 +122,7 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .put('/upload/photos/reorder')
+      .put('/v1/upload/photos/reorder')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         photoOrder: ['/uploads/photo-2.jpg', '/uploads/photo-1.jpg'],
@@ -140,7 +140,7 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .put('/upload/photos/reorder')
+      .put('/v1/upload/photos/reorder')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ photoOrder: [] });
 
@@ -152,7 +152,7 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .put('/upload/photos/reorder')
+      .put('/v1/upload/photos/reorder')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({
         photoOrder: ['/uploads/photo-2.jpg', '/uploads/missing.jpg'],
@@ -166,7 +166,7 @@ describe('UploadController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/upload/photos')
+      .get('/v1/upload/photos')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);

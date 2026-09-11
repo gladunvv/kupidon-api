@@ -14,20 +14,27 @@ describe('DialogController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/dialogs')
+      .get('/v1/dialogs')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
     expectSuccessEnvelope(response.body);
     expect(response.body.data).toEqual(expect.any(Array));
     expect(response.body.data).toHaveLength(1);
+    expect(response.body.meta.pagination).toEqual({
+      page: 1,
+      limit: 20,
+      total: 1,
+      totalPages: 1,
+      hasNext: false,
+    });
   });
 
   it('POST /dialogs/create creates dialog', async () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post('/dialogs/create')
+      .post('/v1/dialogs/create')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ matchId: testIds.match });
 
@@ -45,7 +52,7 @@ describe('DialogController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
     const createDialog = () =>
       request(getApp().getHttpServer())
-        .post('/dialogs/create')
+        .post('/v1/dialogs/create')
         .set('Authorization', `Bearer ${accessToken}`)
         .send({ matchId: testIds.match });
 
@@ -64,13 +71,13 @@ describe('DialogController (contract)', () => {
     });
 
     const response = await request(getApp().getHttpServer())
-      .post('/dialogs/create')
+      .post('/v1/dialogs/create')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ matchId: testIds.match });
 
     expect(response.status).toBe(404);
     expectErrorEnvelope(response.body, {
-      code: 'NOT_FOUND',
+      code: 'MATCH_NOT_FOUND',
       message: 'Match not found or access denied',
     });
   });
@@ -79,7 +86,7 @@ describe('DialogController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post('/dialogs/create')
+      .post('/v1/dialogs/create')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ matchId: 'invalid-id' });
 
@@ -91,13 +98,13 @@ describe('DialogController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post('/dialogs/create')
+      .post('/v1/dialogs/create')
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ matchId: testIds.missingMatch });
 
     expect(response.status).toBe(404);
     expectErrorEnvelope(response.body, {
-      code: 'NOT_FOUND',
+      code: 'MATCH_NOT_FOUND',
       message: 'Match not found or access denied',
     });
   });
@@ -106,7 +113,7 @@ describe('DialogController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get(`/dialogs/${testIds.dialog}`)
+      .get(`/v1/dialogs/${testIds.dialog}`)
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
@@ -124,7 +131,7 @@ describe('DialogController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get(`/dialogs/${testIds.dialog}/messages`)
+      .get(`/v1/dialogs/${testIds.dialog}/messages`)
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(200);
@@ -146,13 +153,13 @@ describe('DialogController (contract)', () => {
 
     for (const text of ['second', 'third']) {
       await request(getApp().getHttpServer())
-        .post(`/dialogs/${testIds.dialog}/messages`)
+        .post(`/v1/dialogs/${testIds.dialog}/messages`)
         .set('Authorization', `Bearer ${accessToken}`)
         .send({ text });
     }
 
     const firstPage = await request(getApp().getHttpServer())
-      .get(`/dialogs/${testIds.dialog}/messages`)
+      .get(`/v1/dialogs/${testIds.dialog}/messages`)
       .query({ limit: 2 })
       .set('Authorization', `Bearer ${accessToken}`);
 
@@ -162,7 +169,7 @@ describe('DialogController (contract)', () => {
     expect(cursor).toEqual(expect.any(String));
 
     const secondPage = await request(getApp().getHttpServer())
-      .get(`/dialogs/${testIds.dialog}/messages`)
+      .get(`/v1/dialogs/${testIds.dialog}/messages`)
       .query({ limit: 2, before: cursor })
       .set('Authorization', `Bearer ${accessToken}`);
 
@@ -181,7 +188,7 @@ describe('DialogController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get(`/dialogs/${testIds.dialog}/messages`)
+      .get(`/v1/dialogs/${testIds.dialog}/messages`)
       .query({ limit: 0 })
       .set('Authorization', `Bearer ${accessToken}`);
 
@@ -193,12 +200,12 @@ describe('DialogController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get('/dialogs/invalid-id')
+      .get('/v1/dialogs/invalid-id')
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(400);
     expectErrorEnvelope(response.body, {
-      code: 'BAD_REQUEST',
+      code: 'INVALID_OBJECT_ID',
       message: 'Invalid MongoDB ObjectId',
     });
   });
@@ -207,18 +214,18 @@ describe('DialogController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .get(`/dialogs/${testIds.missingDialog}`)
+      .get(`/v1/dialogs/${testIds.missingDialog}`)
       .set('Authorization', `Bearer ${accessToken}`);
 
     expect(response.status).toBe(404);
-    expectErrorEnvelope(response.body, { code: 'NOT_FOUND' });
+    expectErrorEnvelope(response.body, { code: 'DIALOG_NOT_FOUND' });
   });
 
   it('POST /dialogs/:id/messages sends message', async () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const response = await request(getApp().getHttpServer())
-      .post(`/dialogs/${testIds.dialog}/messages`)
+      .post(`/v1/dialogs/${testIds.dialog}/messages`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ text: 'Новое сообщение' });
 
@@ -239,13 +246,13 @@ describe('DialogController (contract)', () => {
     });
 
     const response = await request(getApp().getHttpServer())
-      .post(`/dialogs/${testIds.dialog}/messages`)
+      .post(`/v1/dialogs/${testIds.dialog}/messages`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ text: 'Чужое сообщение' });
 
     expect(response.status).toBe(404);
     expectErrorEnvelope(response.body, {
-      code: 'NOT_FOUND',
+      code: 'DIALOG_NOT_FOUND',
       message: 'Dialog not found or access denied',
     });
   });
@@ -254,7 +261,7 @@ describe('DialogController (contract)', () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 
     const emptyResponse = await request(getApp().getHttpServer())
-      .post(`/dialogs/${testIds.dialog}/messages`)
+      .post(`/v1/dialogs/${testIds.dialog}/messages`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ text: '   ' });
 
@@ -262,7 +269,7 @@ describe('DialogController (contract)', () => {
     expectErrorEnvelope(emptyResponse.body, { code: 'BAD_REQUEST' });
 
     const longResponse = await request(getApp().getHttpServer())
-      .post(`/dialogs/${testIds.dialog}/messages`)
+      .post(`/v1/dialogs/${testIds.dialog}/messages`)
       .set('Authorization', `Bearer ${accessToken}`)
       .send({ text: 'a'.repeat(1001) });
 
