@@ -42,6 +42,10 @@ coverage/
 # Local project planning
 ROADMAP.md
 
+# Load test generated artifacts (regenerate with loadtest/seed.js)
+loadtest/actors.json
+loadtest/results/
+
 # nyc test coverage
 .nyc_output/
 
