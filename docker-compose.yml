@@ -26,7 +26,10 @@ services:
       start_period: 5s
 
   minio:
-    image: minio/minio:latest
+    # quay.io, not Docker Hub: docker.io/minio/minio stopped serving pulls
+    # and fails with "pull access denied". Release pinned so a moving tag
+    # can't break a fresh spin-up.
+    image: quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z
     command: server /data --console-address ":9001"
     ports:
       - '9000:9000'

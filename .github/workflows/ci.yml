@@ -75,11 +75,16 @@ jobs:
         # GitHub Actions service containers can't override the image's
         # command, and MinIO needs "server /data" to start — run it as a
         # plain background container instead.
+        #
+        # Pulled from quay.io (MinIO's own registry), not Docker Hub: the
+        # docker.io/minio/minio repo stopped serving pulls and now fails
+        # with "pull access denied". The release tag is pinned so a moving
+        # tag can't break CI the same way again.
         run: |
           docker run -d --name minio -p 9000:9000 \
             -e MINIO_ROOT_USER=minioadmin \
             -e MINIO_ROOT_PASSWORD=minioadmin \
-            minio/minio:latest server /data
+            quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
           for i in $(seq 1 30); do
             curl -sf http://127.0.0.1:9000/minio/health/live && break
             sleep 1
