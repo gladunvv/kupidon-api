@@ -323,9 +323,10 @@ class TestAuthService {
     const accessToken = this.jwtService.sign({
       sub: user._id,
       phone: user.phone,
+      type: 'access',
     });
     const refreshToken = this.jwtService.sign(
-      { sub: user._id, phone: user.phone },
+      { sub: user._id, phone: user.phone, type: 'refresh' },
       { expiresIn: '7d' },
     );
 
@@ -367,9 +368,10 @@ class TestAuthService {
       const accessToken = this.jwtService.sign({
         sub: user._id,
         phone: user.phone,
+        type: 'access',
       });
       const nextRefreshToken = this.jwtService.sign(
-        { sub: user._id, phone: user.phone },
+        { sub: user._id, phone: user.phone, type: 'refresh' },
         { expiresIn: '7d' },
       );
 

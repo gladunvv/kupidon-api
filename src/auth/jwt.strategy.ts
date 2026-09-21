@@ -17,7 +17,15 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     });
   }
 
-  async validate(payload: { sub: string }) {
+  // The refresh token is signed with a different secret, so it can't pass
+  // the signature check here — the type check is the second lock: a config
+  // that accidentally reuses one secret for both must not turn a long-lived
+  // refresh token into a bearer token for the whole API.
+  async validate(payload: { sub: string; type?: string }) {
+    if (payload.type !== 'access') {
+      throw new UnauthorizedException();
+    }
+
     const user = await this.usersService.findById(payload.sub);
     if (!user) {
       throw new UnauthorizedException();
