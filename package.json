@@ -25,7 +25,8 @@
     "migrate:relationships:apply": "ts-node -r tsconfig-paths/register src/migrations/unique-relationships.command.ts --apply",
     "migrate:relationships:rollback": "ts-node -r tsconfig-paths/register src/migrations/unique-relationships.command.ts --rollback-indexes",
     "cleanup:orphan-photos:audit": "ts-node -r tsconfig-paths/register src/storage/orphan-photos.command.ts",
-    "cleanup:orphan-photos:apply": "ts-node -r tsconfig-paths/register src/storage/orphan-photos.command.ts --apply"
+    "cleanup:orphan-photos:apply": "ts-node -r tsconfig-paths/register src/storage/orphan-photos.command.ts --apply",
+    "loadtest:seed": "node loadtest/seed.js"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1125.0",
