@@ -23,6 +23,47 @@ const REQUIRED_PROFILE_FIELDS = [
   'city',
 ] as const;
 
+// Photos are deliberately absent: they're owned by the upload endpoints,
+// which are the only place a photo URL is produced and ownership checked.
+const PROFILE_UPDATE_FIELDS = [
+  'name',
+  'age',
+  'gender',
+  'about',
+  'city',
+  'interests',
+  'goals',
+  'lifestyleOptions',
+  'occupation',
+  'education',
+  'height',
+  'coordinates',
+] as const;
+
+// Allowlist, not a deny list: every field another user is allowed to see is
+// named here, so a new schema field is invisible until someone adds it on
+// purpose. The previous deny list silently started leaking refreshTokenHash
+// (and phone, in the nearby pipeline) when those fields were added to the
+// schema later. Coordinates stay private — proximity is exposed through the
+// computed `distance` field instead.
+const PUBLIC_USER_PROJECTION = {
+  name: 1,
+  age: 1,
+  gender: 1,
+  about: 1,
+  photos: 1,
+  city: 1,
+  interests: 1,
+  goals: 1,
+  lifestyleOptions: 1,
+  occupation: 1,
+  education: 1,
+  height: 1,
+  isVerified: 1,
+  lastActiveAt: 1,
+  distance: 1,
+} as const;
+
 const OPTIONAL_PROFILE_FIELDS = [
   'interests',
   'goals',
@@ -150,14 +191,7 @@ export class UsersService {
           },
         },
       },
-      {
-        $project: {
-          phone: 0,
-          __v: 0,
-          created_at: 0,
-          updated_at: 0,
-        },
-      },
+      { $project: PUBLIC_USER_PROJECTION },
       {
         $facet: {
           users: [{ $skip: (page - 1) * limit }, { $limit: limit }],
@@ -182,7 +216,16 @@ export class UsersService {
     userId: string,
     updateProfileDto: UpdateProfileDto,
   ): Promise<User> {
-    const updateData: Record<string, unknown> = { ...updateProfileDto };
+    // Explicit field list rather than a spread of the DTO: the spread wrote
+    // whatever extra keys the request body carried (phone, isVerified,
+    // refreshTokenHash) straight into the document.
+    const updateData: Record<string, unknown> = {};
+    for (const field of PROFILE_UPDATE_FIELDS) {
+      const value = updateProfileDto[field];
+      if (value !== undefined) {
+        updateData[field] = value;
+      }
+    }
     updateData.lastActiveAt = new Date();
 
     if (updateProfileDto.coordinates) {
@@ -352,6 +395,7 @@ export class UsersService {
           as: 'interests',
         },
       },
+      { $project: PUBLIC_USER_PROJECTION },
       {
         $facet: {
           users: [{ $skip: (page - 1) * limit }, { $limit: limit }],

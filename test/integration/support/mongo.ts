@@ -24,6 +24,13 @@ import {
   Block,
   BlockMongoModule,
 } from '../../../src/block/schemas/block.schema';
+import {
+  CityMongoModule,
+  GoalMongoModule,
+  InterestMongoModule,
+  LifestyleCategoryMongoModule,
+  LifestyleOptionMongoModule,
+} from '../../../src/reference/schemas';
 import { integrationConfig } from './config';
 
 export const INTEGRATION_MONGODB_URI =
@@ -44,6 +51,13 @@ export async function createMongoTestingModule(): Promise<TestingModule> {
       DialogMongoModule,
       MessageMongoModule,
       BlockMongoModule,
+      // Registered so that profile reads/writes can populate their
+      // reference fields; no test seeds these collections directly.
+      CityMongoModule,
+      InterestMongoModule,
+      GoalMongoModule,
+      LifestyleCategoryMongoModule,
+      LifestyleOptionMongoModule,
     ],
   }).compile();
 

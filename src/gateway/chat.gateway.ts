@@ -27,12 +27,9 @@ import { WsRateLimiter } from './ws-rate-limiter';
 // participant's socket.
 const SEND_MESSAGE_LIMIT = { maxEvents: 10, windowMs: 10_000 };
 
-@WebSocketGateway({
-  cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-    credentials: true,
-  },
-})
+// CORS for this gateway is configured centrally in CorsIoAdapter, from the
+// same allowlist the HTTP server uses.
+@WebSocketGateway()
 export class ChatGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {

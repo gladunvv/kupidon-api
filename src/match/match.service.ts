@@ -168,9 +168,12 @@ export class MatchService {
         _id: matchObjectId,
         $or: [{ user1: userObjectId }, { user2: userObjectId }],
       })
+      // _id stays selected: the block check below needs the partner's id,
+      // and without it every match details request from a user who has
+      // blocked anyone was answered with 404.
       .populate({
         path: 'user1 user2',
-        select: 'name age photos about -_id',
+        select: 'name age photos about',
       })
       .exec();
 
