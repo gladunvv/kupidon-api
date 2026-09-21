@@ -122,6 +122,40 @@ describe('UsersController (contract)', () => {
     expectErrorEnvelope(response.body, { code: 'BAD_REQUEST' });
   });
 
+  it('PUT /users rejects fields outside the profile contract', async () => {
+    const { accessToken } = await createAuthorizedSession(getApp());
+
+    const response = await request(getApp().getHttpServer())
+      .put('/v1/users')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({
+        name: 'Vlad',
+        phone: '+79990009999',
+        isVerified: true,
+      });
+
+    expect(response.status).toBe(400);
+    expectErrorEnvelope(response.body, { code: 'BAD_REQUEST' });
+
+    const profile = await request(getApp().getHttpServer())
+      .get('/v1/users')
+      .set('Authorization', `Bearer ${accessToken}`);
+
+    expect(profile.body.data.phone).toBe(defaultPhone);
+  });
+
+  it('PUT /users rejects photos, which only the upload endpoints own', async () => {
+    const { accessToken } = await createAuthorizedSession(getApp());
+
+    const response = await request(getApp().getHttpServer())
+      .put('/v1/users')
+      .set('Authorization', `Bearer ${accessToken}`)
+      .send({ photos: ['https://cdn.example.com/users/other-user/1.jpg'] });
+
+    expect(response.status).toBe(400);
+    expectErrorEnvelope(response.body, { code: 'BAD_REQUEST' });
+  });
+
   it('PATCH /users/search-preferences validates request body', async () => {
     const { accessToken } = await createAuthorizedSession(getApp());
 

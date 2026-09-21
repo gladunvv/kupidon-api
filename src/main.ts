@@ -8,12 +8,14 @@ import { HttpExceptionFilter } from './core/http/http-exception.filter';
 import { MulterExceptionFilter } from './core/http/multer-exception.filter';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import cookieParser from 'cookie-parser';
+import helmet from 'helmet';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { ConfigService } from '@nestjs/config';
 import { ShutdownService } from './health/shutdown.service';
 import { StructuredLoggerService } from './core/logging/structured-logger.service';
 import { initSentry } from './observability/sentry';
 import { configureGlobalPrefix } from './core/http/api-prefix';
+import { CorsIoAdapter } from './gateway/cors-io.adapter';
 
 // Time to let the orchestrator notice the readiness flip (via the next
 // /health/ready probe) and stop routing new traffic before the HTTP server
@@ -31,6 +33,15 @@ async function bootstrap() {
   initSentry(configService.get<string>('sentry.dsn'));
   configureGlobalPrefix(app);
 
+  // Without this, req.ip behind a reverse proxy is the proxy's address and
+  // the per-IP OTP budget is shared by every user; with it set to more hops
+  // than actually exist, a client can forge X-Forwarded-For to get a fresh
+  // one. Hence an explicit hop count instead of `trust proxy: true`.
+  const trustProxyHops = configService.get<number>('app.trustProxyHops');
+  if (trustProxyHops) {
+    app.set('trust proxy', trustProxyHops);
+  }
+
   // Publishing the full route/DTO surface is a reconnaissance aid in
   // production; keep it available everywhere else (dev, staging, CI).
   if (process.env.NODE_ENV !== 'production') {
@@ -47,6 +58,10 @@ async function bootstrap() {
     });
   }
 
+  // Defaults only: this API answers JSON, so the headers that matter are
+  // nosniff, frameguard, referrer policy and no x-powered-by. HSTS is part
+  // of the defaults and is a no-op until the response is served over TLS.
+  app.use(helmet());
   app.use(cookieParser());
 
   app.useGlobalPipes(validationPipe);
@@ -58,13 +73,15 @@ async function bootstrap() {
     'app.cors.allowedOrigins',
   );
 
+  app.useWebSocketAdapter(new CorsIoAdapter(app, allowedOrigins));
+
   app.enableCors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true);
       if (allowedOrigins.includes(origin)) return cb(null, true);
       cb(new Error(`CORS blocked: ${origin}`));
     },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization'],
     credentials: true,
   });

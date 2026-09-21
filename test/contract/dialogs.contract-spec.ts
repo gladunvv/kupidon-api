@@ -68,6 +68,7 @@ describe('DialogController (contract)', () => {
     const accessToken = getApp().get(JwtService).sign({
       sub: testIds.pendingUser,
       phone: '+79990003344',
+      type: 'access',
     });
 
     const response = await request(getApp().getHttpServer())
@@ -243,6 +244,7 @@ describe('DialogController (contract)', () => {
     const accessToken = getApp().get(JwtService).sign({
       sub: testIds.pendingUser,
       phone: '+79990003344',
+      type: 'access',
     });
 
     const response = await request(getApp().getHttpServer())

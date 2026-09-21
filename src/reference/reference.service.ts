@@ -14,6 +14,13 @@ import {
   LifestyleOptionDocument,
 } from './schemas';
 
+// User input reaches MongoDB as a regular expression: without escaping, a
+// pattern like "(a+)+$" is evaluated server-side on every city document and
+// burns database CPU on an endpoint that needs no authentication.
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
 interface CitySearchOptions {
   countryCode?: string;
   search?: string;
@@ -56,11 +63,12 @@ export class ReferenceService {
     }
 
     if (search) {
+      const pattern = escapeRegex(search);
       query = query.where({
         $or: [
-          { name: { $regex: search, $options: 'i' } },
-          { fullName: { $regex: search, $options: 'i' } },
-          { aliases: { $in: [new RegExp(search, 'i')] } },
+          { name: { $regex: pattern, $options: 'i' } },
+          { fullName: { $regex: pattern, $options: 'i' } },
+          { aliases: { $in: [new RegExp(pattern, 'i')] } },
         ],
       });
     }

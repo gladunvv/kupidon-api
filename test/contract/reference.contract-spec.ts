@@ -31,6 +31,15 @@ describe('ReferenceController (contract)', () => {
     expectErrorEnvelope(response.body, { code: 'BAD_REQUEST' });
   });
 
+  it('GET /reference/cities caps limit on this public endpoint', async () => {
+    const response = await request(getApp().getHttpServer()).get(
+      '/v1/reference/cities?limit=100000',
+    );
+
+    expect(response.status).toBe(400);
+    expectErrorEnvelope(response.body, { code: 'BAD_REQUEST' });
+  });
+
   it('GET /reference/cities/popular returns popular cities', async () => {
     const response = await request(getApp().getHttpServer()).get(
       '/v1/reference/cities/popular?limit=1',

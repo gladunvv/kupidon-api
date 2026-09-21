@@ -24,6 +24,7 @@ describe('MatchService.getUserMatches aggregation (real MongoDB)', () => {
   let userModel: Model<UserDocument>;
   let matchModel: Model<MatchDocument>;
   let dialogModel: Model<DialogDocument>;
+  let blockModel: Model<BlockDocument>;
 
   beforeAll(async () => {
     moduleRef = await createMongoTestingModule();
@@ -36,9 +37,7 @@ describe('MatchService.getUserMatches aggregation (real MongoDB)', () => {
       getModelToken(Message.name),
     );
     dialogModel = moduleRef.get(getModelToken(Dialog.name));
-    const blockModel = moduleRef.get<Model<BlockDocument>>(
-      getModelToken(Block.name),
-    );
+    blockModel = moduleRef.get<Model<BlockDocument>>(getModelToken(Block.name));
     const blockService = new BlockService(blockModel);
 
     matchService = new MatchService(
@@ -87,6 +86,49 @@ describe('MatchService.getUserMatches aggregation (real MongoDB)', () => {
     expect(matches[0].partner._id.toString()).toBe(partner._id.toString());
     expect(matches[0].partner.name).toBe('Anna');
     expect(matches[0].dialog.hasLastMessage).toBe(false);
+  });
+
+  it('serves match details while the user has an unrelated block', async () => {
+    const me = await userModel.create({ phone: '+79990006611', name: 'Vlad' });
+    const partner = await userModel.create({
+      phone: '+79990006622',
+      name: 'Anna',
+    });
+    const unrelated = await userModel.create({ phone: '+79990006633' });
+
+    const [user1, user2] =
+      me._id.toString() < partner._id.toString()
+        ? [me._id, partner._id]
+        : [partner._id, me._id];
+    const match = await matchModel.create({ user1, user2 });
+    await blockModel.create({ blockerId: me._id, blockedId: unrelated._id });
+
+    const details = await matchService.getMatchDetails(
+      match._id.toString(),
+      me._id.toString(),
+    );
+
+    expect(details.match._id.toString()).toBe(match._id.toString());
+    expect(details.partner).toEqual(expect.objectContaining({ name: 'Anna' }));
+  });
+
+  it('hides match details from a user who blocked the partner', async () => {
+    const me = await userModel.create({ phone: '+79990006711', name: 'Vlad' });
+    const partner = await userModel.create({
+      phone: '+79990006722',
+      name: 'Anna',
+    });
+
+    const [user1, user2] =
+      me._id.toString() < partner._id.toString()
+        ? [me._id, partner._id]
+        : [partner._id, me._id];
+    const match = await matchModel.create({ user1, user2 });
+    await blockModel.create({ blockerId: me._id, blockedId: partner._id });
+
+    await expect(
+      matchService.getMatchDetails(match._id.toString(), me._id.toString()),
+    ).rejects.toThrow('Match not found or access denied');
   });
 
   it('does not include matches that belong to other users', async () => {

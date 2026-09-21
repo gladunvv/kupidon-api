@@ -33,8 +33,15 @@ export function validateConfig(rawConfig: unknown): RootConfig {
     forbidNonWhitelisted: true,
   });
 
-  if (errors.length > 0) {
-    const messages = flattenErrors(errors);
+  const messages = flattenErrors(errors);
+
+  // Cross-field rule, so it doesn't fit a property decorator: one shared
+  // secret would make a refresh token a valid access token as well.
+  if (config.jwt?.secret && config.jwt.secret === config.jwt.secret_refresh) {
+    messages.push('jwt.secret_refresh: must differ from jwt.secret');
+  }
+
+  if (messages.length > 0) {
     throw new Error(
       `Configuration validation failed:\n- ${messages.join('\n- ')}`,
     );

@@ -15,8 +15,14 @@ export const exceptionFactory = (errors: ValidationError[]) => {
   });
 };
 
+// whitelist + forbidNonWhitelisted: a DTO is the full contract of a request
+// body/query. Without them any extra key reaches the service layer, and an
+// update built from a spread DTO writes whatever the client sent — see
+// docs/security-review.md (REL-02, mass assignment).
 export const validationPipe = new ValidationPipe({
   transform: true,
+  whitelist: true,
+  forbidNonWhitelisted: true,
   enableDebugMessages: false,
   exceptionFactory,
 });

@@ -7,8 +7,13 @@ import {
   IsString,
   Matches,
   Min,
+  MinLength,
   ValidateNested,
 } from 'class-validator';
+
+// A JWT secret shorter than the HMAC-SHA256 block is the weakest link of
+// every session in the system; refuse to start rather than sign with it.
+const MIN_JWT_SECRET_LENGTH = 32;
 
 export class CorsConfig {
   @IsArray()
@@ -21,6 +26,16 @@ export class AppConfig {
   @IsInt()
   @Min(1)
   port!: number;
+
+  // Number of reverse proxies in front of the API. Leave unset when the API
+  // is exposed directly: with it set, a client can forge X-Forwarded-For and
+  // get a fresh per-IP OTP budget; without it behind a proxy, every request
+  // looks like it comes from the proxy and the per-IP OTP budget is shared
+  // by all users.
+  @IsOptional()
+  @IsInt()
+  @Min(1)
+  trustProxyHops?: number;
 
   @ValidateNested()
   @Type(() => CorsConfig)
@@ -39,9 +54,11 @@ export class RedisConfig {
 
 export class JwtConfig {
   @IsString()
+  @MinLength(MIN_JWT_SECRET_LENGTH)
   secret!: string;
 
   @IsString()
+  @MinLength(MIN_JWT_SECRET_LENGTH)
   secret_refresh!: string;
 
   @IsString()

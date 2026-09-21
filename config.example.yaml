@@ -12,8 +12,10 @@ redis:
   url: redis://127.0.0.1:6379
 
 jwt:
-  secret: change-this-access-secret
-  secret_refresh: change-this-refresh-secret
+  # At least 32 characters, and the two must differ. Generate with
+  # `openssl rand -hex 32` before any real deployment.
+  secret: change-this-access-secret-to-32-plus-random-characters
+  secret_refresh: change-this-refresh-secret-to-32-plus-random-chars
   accessExpiresIn: 1h
   refreshExpiresIn: 7d
 

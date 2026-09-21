@@ -8,9 +8,17 @@ import {
   Max,
   MaxLength,
   IsMongoId,
+  ArrayMaxSize,
 } from 'class-validator';
 import { ApiPropertyOptional } from '@nestjs/swagger';
 
+// Bounds an otherwise unlimited array of reference ids; the seeded
+// dictionaries are well below this.
+const MAX_REFERENCE_SELECTION = 50;
+
+// Photos are not part of this DTO on purpose: they're written only by the
+// upload endpoints, which are the only place a stored photo URL comes from
+// (see docs/security-review.md, REL-02).
 export class UpdateProfileDto {
   @ApiPropertyOptional({ example: 'Влад' })
   @IsOptional()
@@ -36,15 +44,6 @@ export class UpdateProfileDto {
   @MaxLength(500)
   about?: string;
 
-  @ApiPropertyOptional({
-    type: [String],
-    example: ['/uploads/1.jpg', '/uploads/2.jpg'],
-  })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  photos?: string[];
-
   @ApiPropertyOptional({ example: '66123456789abcdef0123456' })
   @IsOptional()
   @IsMongoId()
@@ -56,6 +55,7 @@ export class UpdateProfileDto {
   })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(MAX_REFERENCE_SELECTION)
   @IsMongoId({ each: true })
   interests?: string[];
 
@@ -65,6 +65,7 @@ export class UpdateProfileDto {
   })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(MAX_REFERENCE_SELECTION)
   @IsMongoId({ each: true })
   goals?: string[];
 
@@ -74,6 +75,7 @@ export class UpdateProfileDto {
   })
   @IsOptional()
   @IsArray()
+  @ArrayMaxSize(MAX_REFERENCE_SELECTION)
   @IsMongoId({ each: true })
   lifestyleOptions?: string[];
 
