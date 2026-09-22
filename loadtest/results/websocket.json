@@ -1,0 +1,118 @@
+{
+    "metrics": {
+        "ws_join_dialog_ms": {
+            "med": 10,
+            "max": 37,
+            "p(90)": 12,
+            "p(95)": 14,
+            "avg": 9.928657556270096,
+            "min": 2,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "vus_max": {
+            "min": 50,
+            "max": 50,
+            "value": 50
+        },
+        "ws_msgs_received": {
+            "count": 19904,
+            "rate": 499.6055290046688
+        },
+        "checks": {
+            "passes": 14928,
+            "fails": 0,
+            "value": 1
+        },
+        "ws_send_message_roundtrip_ms": {
+            "p(90)": 29.5,
+            "p(95)": 32,
+            "avg": 24.211816720257236,
+            "min": 1,
+            "med": 25,
+            "max": 60,
+            "thresholds": {
+                "p(95)<300": false
+            }
+        },
+        "ws_msgs_sent": {
+            "count": 14928,
+            "rate": 374.7041467535016
+        },
+        "ws_session_duration": {
+            "med": 178.1676875,
+            "max": 13322.736917,
+            "p(90)": 194.8245625,
+            "p(95)": 204.95817675,
+            "avg": 306.1936248940914,
+            "min": 6.825875
+        },
+        "data_sent": {
+            "count": 3110353,
+            "rate": 78072.22447529434
+        },
+        "iteration_duration": {
+            "avg": 306.31888818126987,
+            "min": 7.01525,
+            "med": 178.27216700000002,
+            "max": 13322.856958,
+            "p(90)": 194.9447915,
+            "p(95)": 205.07855225
+        },
+        "iterations": {
+            "count": 4976,
+            "rate": 124.9013822511672
+        },
+        "ws_sessions": {
+            "count": 4976,
+            "rate": 124.9013822511672
+        },
+        "ws_connecting": {
+            "med": 137.4343335,
+            "max": 13274.516459,
+            "p(90)": 152.6108125,
+            "p(95)": 160.76121824999998,
+            "avg": 265.3861326903137,
+            "min": 0.91075
+        },
+        "data_received": {
+            "count": 4134477,
+            "rate": 103778.5153106228
+        },
+        "vus": {
+            "min": 4,
+            "max": 50,
+            "value": 20
+        }
+    },
+    "root_group": {
+        "groups": {},
+        "checks": {
+                "ws handshake status is 101": {
+                    "name": "ws handshake status is 101",
+                    "path": "::ws handshake status is 101",
+                    "id": "d33c39f480e1974c4b5e51b04b0959d4",
+                    "passes": 4976,
+                    "fails": 0
+                },
+                "joined dialog": {
+                    "fails": 0,
+                    "name": "joined dialog",
+                    "path": "::joined dialog",
+                    "id": "a72700560f446bc0528bbe1a9170a41a",
+                    "passes": 4976
+                },
+                "received message echo": {
+                    "id": "b95add96ec5d471e733849f5ea143ddb",
+                    "passes": 4976,
+                    "fails": 0,
+                    "name": "received message echo",
+                    "path": "::received message echo"
+                }
+            },
+        "name": "",
+        "path": "",
+        "id": "d41d8cd98f00b204e9800998ecf8427e"
+    }
+}
