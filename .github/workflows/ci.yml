@@ -71,22 +71,28 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: npm
-      - name: Start MinIO
-        # GitHub Actions service containers can't override the image's
-        # command, and MinIO needs "server /data" to start — run it as a
-        # plain background container instead.
+      - name: Start S3 (LocalStack)
+        # Used to be MinIO. MinIO OSS (server/client/KES) is now archived
+        # upstream and gone from every free channel: docker.io required auth
+        # first, then quay.io/minio/minio started requiring it too, and the
+        # dl.min.io binary download now returns 410 Gone ("archived and no
+        # longer maintained"). LocalStack's S3 emulation is this job's
+        # replacement — test-only, not a MinIO replacement for production
+        # storage (see docs/runbook.md).
         #
-        # Pulled from quay.io (MinIO's own registry), not Docker Hub: the
-        # docker.io/minio/minio repo stopped serving pulls and now fails
-        # with "pull access denied". The release tag is pinned so a moving
-        # tag can't break CI the same way again.
+        # Pinned to 2.3.2, from before LocalStack started requiring
+        # LOCALSTACK_AUTH_TOKEN on newer tags (including `latest`) — the same
+        # "moving tag" trap the old MinIO pin was already avoiding.
+        # GATEWAY_LISTEN keeps it on port 9000 so storage.service.ts's own
+        # tests need no endpoint/credential changes: LocalStack's community
+        # S3 accepts any access key/secret without validating them.
         run: |
-          docker run -d --name minio -p 9000:9000 \
-            -e MINIO_ROOT_USER=minioadmin \
-            -e MINIO_ROOT_PASSWORD=minioadmin \
-            quay.io/minio/minio:RELEASE.2025-09-07T16-13-09Z server /data
+          docker run -d --name s3 -p 9000:9000 \
+            -e SERVICES=s3 \
+            -e GATEWAY_LISTEN=0.0.0.0:9000 \
+            localstack/localstack:2.3.2
           for i in $(seq 1 30); do
-            curl -sf http://127.0.0.1:9000/minio/health/live && break
+            curl -sf http://127.0.0.1:9000/_localstack/health && break
             sleep 1
           done
       - run: npm ci
