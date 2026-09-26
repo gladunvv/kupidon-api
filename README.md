@@ -425,6 +425,8 @@ npm run migrate:relationships:audit  # контрольный результат
   редактируются логгером автоматически
 - Результаты security review (закрытые находки, принятые риски, требования к
   развёртыванию) — [`docs/security-review.md`](docs/security-review.md)
+- Deploy, rollback, ротация секретов, восстановление БД и поведение при
+  недоступности Mongo/Redis/SMS — [`docs/runbook.md`](docs/runbook.md)
 
 ## Тестирование
 
