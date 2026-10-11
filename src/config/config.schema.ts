@@ -110,6 +110,13 @@ export class OtpConfig {
   @IsInt()
   @Min(1)
   blockSeconds?: number;
+
+  // Dev/staging only, while no real SMS provider is wired: every issued OTP
+  // equals this value. validateConfig refuses it under NODE_ENV=production —
+  // with it anyone who knows a phone number can sign in as that user.
+  @IsOptional()
+  @Matches(/^\d{4,8}$/)
+  devFixedCode?: string;
 }
 
 export class EncryptionKeyConfig {

@@ -34,3 +34,37 @@ describe('validateConfig jwt secrets', () => {
     expect(() => validateConfig(baseConfig())).not.toThrow();
   });
 });
+
+describe('validateConfig otp.devFixedCode', () => {
+  const originalNodeEnv = process.env.NODE_ENV;
+
+  afterEach(() => {
+    process.env.NODE_ENV = originalNodeEnv;
+  });
+
+  it('accepts a digit code outside production', () => {
+    process.env.NODE_ENV = 'development';
+    const config = baseConfig();
+    config.otp.devFixedCode = '0000';
+
+    expect(() => validateConfig(config)).not.toThrow();
+  });
+
+  it('refuses any fixed code under NODE_ENV=production', () => {
+    process.env.NODE_ENV = 'production';
+    const config = baseConfig();
+    config.otp.devFixedCode = '0000';
+
+    expect(() => validateConfig(config)).toThrow(
+      /otp.devFixedCode: not allowed when NODE_ENV=production/,
+    );
+  });
+
+  it('rejects a non-numeric code', () => {
+    process.env.NODE_ENV = 'development';
+    const config = baseConfig();
+    config.otp.devFixedCode = 'abcd';
+
+    expect(() => validateConfig(config)).toThrow(/otp.devFixedCode/);
+  });
+});
