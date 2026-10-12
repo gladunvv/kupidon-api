@@ -61,71 +61,62 @@ export class AuthService {
     res: Response,
   ): Promise<{ access_token: string; user: User }> {
     if (!refresh_token) {
-      res.clearCookie('refresh_token');
-      throw new UnauthorizedException({
-        message: 'Refresh token not found',
-        code: ERROR_CODES.INVALID_TOKEN,
-      });
+      throw this.rejectRefresh(res, 'Refresh token not found');
     }
 
+    let payload: { sub: string; phone: string; type?: string };
     try {
-      const payload = this.jwtService.verify(refresh_token, {
+      payload = this.jwtService.verify(refresh_token, {
         secret: this.jwtConfig.secret_refresh,
       });
-
-      if (payload.type !== 'refresh') {
-        throw new UnauthorizedException({
-          message: 'Invalid token type',
-          code: ERROR_CODES.INVALID_TOKEN,
-        });
-      }
-
-      const user = await this.userModel
-        .findById(payload.sub)
-        .select('+refreshTokenHash');
-
-      if (!user) {
-        res.clearCookie('refresh_token');
-        throw new UnauthorizedException({
-          message: 'User not found',
-          code: ERROR_CODES.INVALID_TOKEN,
-        });
-      }
-
-      if (!user.refreshTokenHash) {
-        throw new UnauthorizedException();
-      }
-
-      const isValid = this.refreshTokenMatches(
-        refresh_token,
-        user.refreshTokenHash,
-      );
-
-      if (!isValid) {
-        throw new UnauthorizedException({
-          message: 'Invalid refresh token',
-          code: ERROR_CODES.INVALID_TOKEN,
-        });
-      }
-
-      const tokens = this.generateTokens(payload.sub, payload.phone);
-
-      user.refreshTokenHash = this.hashRefreshToken(tokens.refresh_token);
-      await user.save();
-
-      this.setRefreshTokenCookie(res, tokens.refresh_token);
-
-      return {
-        access_token: tokens.access_token,
-        user: this.toSafeUser(user),
-      };
     } catch {
-      res.clearCookie('refresh_token');
-      throw new UnauthorizedException({
-        message: 'Invalid refresh token',
-        code: ERROR_CODES.INVALID_TOKEN,
-      });
+      throw this.rejectRefresh(res, 'Invalid refresh token');
     }
+
+    if (payload.type !== 'refresh') {
+      throw this.rejectRefresh(res, 'Invalid token type');
+    }
+
+    const user = await this.userModel
+      .findById(payload.sub)
+      .select('+refreshTokenHash');
+
+    if (!user || !user.refreshTokenHash) {
+      throw this.rejectRefresh(res, 'Invalid refresh token');
+    }
+
+    // A correctly signed refresh token that is no longer the latest one
+    // issued: a newer sign-in rotated it out (single active session) or it is
+    // a replayed rotated token. A distinct code lets the client tell the user
+    // why they were signed out instead of a silent redirect to login.
+    if (!this.refreshTokenMatches(refresh_token, user.refreshTokenHash)) {
+      throw this.rejectRefresh(
+        res,
+        'Session replaced by a newer sign-in',
+        ERROR_CODES.SESSION_REPLACED,
+      );
+    }
+
+    const tokens = this.generateTokens(payload.sub, payload.phone);
+
+    user.refreshTokenHash = this.hashRefreshToken(tokens.refresh_token);
+    await user.save();
+
+    this.setRefreshTokenCookie(res, tokens.refresh_token);
+
+    return {
+      access_token: tokens.access_token,
+      user: this.toSafeUser(user),
+    };
+  }
+
+  private rejectRefresh(
+    res: Response,
+    message: string,
+    code: string = ERROR_CODES.INVALID_TOKEN,
+  ): UnauthorizedException {
+    res.clearCookie('refresh_token');
+    return new UnauthorizedException({ message, code });
   }
 
   private generateTokens(
