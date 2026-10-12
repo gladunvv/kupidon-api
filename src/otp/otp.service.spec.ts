@@ -9,6 +9,7 @@ describe('OtpService abuse protection', () => {
   const createService = (
     evalResults: number[] = [],
     smsProvider?: SmsProvider,
+    devFixedCode?: string,
   ) => {
     const redis = {
       eval: jest.fn(),
@@ -21,7 +22,9 @@ describe('OtpService abuse protection', () => {
       getOrThrow: jest.fn((key: string) =>
         key === 'otp.ttlSeconds' ? 300 : 4,
       ),
-      get: jest.fn((_key: string, fallback: number) => fallback),
+      get: jest.fn((key: string, fallback: number) =>
+        key === 'otp.devFixedCode' ? devFixedCode : fallback,
+      ),
     };
     const defaultSmsProvider: SmsProvider = {
       send: jest.fn().mockResolvedValue({ success: true }),
@@ -48,6 +51,21 @@ describe('OtpService abuse protection', () => {
     const command = JSON.stringify(redis.eval.mock.calls[0]);
     expect(command).not.toContain(phone);
     expect(command).not.toContain(clientIp);
+  });
+
+  it('issues the configured dev fixed code and still stores it via the same atomic operation', async () => {
+    const { redis, service } = createService([1], undefined, '0000');
+
+    await expect(service.generateOtp(phone, clientIp)).resolves.toBe('0000');
+    expect(redis.eval.mock.calls[0]).toContain('0000');
+  });
+
+  it('keeps rate limits in force with a dev fixed code', async () => {
+    const { service } = createService([-1], undefined, '0000');
+
+    await expect(service.generateOtp(phone, clientIp)).rejects.toMatchObject({
+      status: HttpStatus.TOO_MANY_REQUESTS,
+    });
   });
 
   it.each([-1, -2])(

@@ -1,4 +1,10 @@
-import { HttpException, HttpStatus, Inject, Injectable } from '@nestjs/common';
+import {
+  HttpException,
+  HttpStatus,
+  Inject,
+  Injectable,
+  Logger,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Redis } from 'ioredis';
 import { RedisService } from '@liaoliaots/nestjs-redis';
@@ -48,6 +54,8 @@ export class OtpService {
   private readonly maxRequestsPerIpWindow: number;
   private readonly maxVerifyAttempts: number;
   private readonly blockSeconds: number;
+  private readonly devFixedCode: string | undefined;
+  private readonly logger = new Logger(OtpService.name);
 
   constructor(
     private readonly redisService: RedisService,
@@ -78,6 +86,12 @@ export class OtpService {
       5,
     );
     this.blockSeconds = this.configService.get<number>('otp.blockSeconds', 900);
+    this.devFixedCode = this.configService.get<string>('otp.devFixedCode');
+    if (this.devFixedCode) {
+      this.logger.warn(
+        'otp.devFixedCode is set: every OTP is a fixed code. Never enable outside dev/staging',
+      );
+    }
   }
 
   async generateOtp(phoneNumber: string, clientIp: string): Promise<string> {
@@ -163,6 +177,9 @@ export class OtpService {
   }
 
   private createOtp(): string {
+    if (this.devFixedCode) {
+      return this.devFixedCode;
+    }
     const min = 10 ** (this.otpLength - 1);
     const max = 10 ** this.otpLength;
     return randomInt(min, max).toString();

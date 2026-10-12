@@ -41,6 +41,10 @@ export function validateConfig(rawConfig: unknown): RootConfig {
     messages.push('jwt.secret_refresh: must differ from jwt.secret');
   }
 
+  if (config.otp?.devFixedCode && process.env.NODE_ENV === 'production') {
+    messages.push('otp.devFixedCode: not allowed when NODE_ENV=production');
+  }
+
   if (messages.length > 0) {
     throw new Error(
       `Configuration validation failed:\n- ${messages.join('\n- ')}`,

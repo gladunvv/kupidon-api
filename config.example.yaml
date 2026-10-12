@@ -28,6 +28,9 @@ otp:
   maxRequestsPerIpWindow: 30
   maxVerifyAttempts: 5
   blockSeconds: 900
+  # Dev/staging only while no real SMS provider is connected: every OTP is
+  # this code. Refused at startup under NODE_ENV=production.
+  # devFixedCode: '0000'
 
 encryption:
   # Supports key rotation: keep every version a currently-stored message was
