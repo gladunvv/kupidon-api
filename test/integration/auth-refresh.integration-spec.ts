@@ -84,7 +84,7 @@ describe('AuthService refresh rotation (real MongoDB)', () => {
     await expect(
       authService.refreshToken(firstRefreshToken, thirdRes as never),
     ).rejects.toMatchObject({
-      response: expect.objectContaining({ code: ERROR_CODES.INVALID_TOKEN }),
+      response: expect.objectContaining({ code: ERROR_CODES.SESSION_REPLACED }),
     });
 
     const fourthRes = makeRes();
@@ -111,7 +111,7 @@ describe('AuthService refresh rotation (real MongoDB)', () => {
     await expect(
       authService.refreshToken(deviceARefreshToken, makeRes() as never),
     ).rejects.toMatchObject({
-      response: expect.objectContaining({ code: ERROR_CODES.INVALID_TOKEN }),
+      response: expect.objectContaining({ code: ERROR_CODES.SESSION_REPLACED }),
     });
 
     await expect(

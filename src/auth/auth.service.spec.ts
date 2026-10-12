@@ -23,6 +23,26 @@ const makeConfigService = () => ({
 });
 
 describe('AuthService', () => {
+  describe('sendOtp', () => {
+    it('issues an OTP for the phone and client IP, then delivers that same code', async () => {
+      const otpService = {
+        generateOtp: jest.fn().mockResolvedValue('4821'),
+        sendOtp: jest.fn().mockResolvedValue(undefined),
+      };
+      const service = new AuthService(
+        {} as never,
+        {} as never,
+        otpService as never,
+        makeConfigService() as never,
+      );
+
+      await service.sendOtp('+1', '203.0.113.10');
+
+      expect(otpService.generateOtp).toHaveBeenCalledWith('+1', '203.0.113.10');
+      expect(otpService.sendOtp).toHaveBeenCalledWith('+1', '4821');
+    });
+  });
+
   describe('verifyOtp', () => {
     it('rejects an invalid OTP without touching the user collection', async () => {
       const otpService = { validateOtp: jest.fn().mockResolvedValue(false) };
@@ -194,7 +214,9 @@ describe('AuthService', () => {
       await expect(
         service.refreshToken(deviceARefreshToken, makeRes() as never),
       ).rejects.toMatchObject({
-        response: expect.objectContaining({ code: ERROR_CODES.INVALID_TOKEN }),
+        response: expect.objectContaining({
+          code: ERROR_CODES.SESSION_REPLACED,
+        }),
       });
 
       await expect(
@@ -321,11 +343,47 @@ describe('AuthService', () => {
         makeConfigService() as never,
       );
 
+      const res = makeRes();
+
       await expect(
-        service.refreshToken('reused-old-token', makeRes() as never),
+        service.refreshToken('reused-old-token', res as never),
       ).rejects.toMatchObject({
-        response: expect.objectContaining({ code: ERROR_CODES.INVALID_TOKEN }),
+        status: 401,
+        response: expect.objectContaining({
+          code: ERROR_CODES.SESSION_REPLACED,
+        }),
       });
+      expect(res.clearCookie).toHaveBeenCalledWith('refresh_token');
+    });
+
+    it('lets a storage failure surface as a server error instead of signing the user out', async () => {
+      const jwtService = {
+        verify: jest
+          .fn()
+          .mockReturnValue({ sub: 'user-1', phone: '+1', type: 'refresh' }),
+        sign: jest.fn().mockReturnValue('token'),
+      };
+      const storedUser = {
+        refreshTokenHash: sha256('current-token'),
+        save: jest.fn().mockRejectedValue(new Error('mongo down')),
+      };
+      const userModel = {
+        findById: jest.fn().mockReturnValue({
+          select: jest.fn().mockResolvedValue(storedUser),
+        }),
+      };
+      const res = makeRes();
+      const service = new AuthService(
+        userModel as never,
+        jwtService as never,
+        {} as never,
+        makeConfigService() as never,
+      );
+
+      await expect(
+        service.refreshToken('current-token', res as never),
+      ).rejects.toThrow('mongo down');
+      expect(res.clearCookie).not.toHaveBeenCalled();
     });
 
     it('rejects a refresh attempt after logout cleared the stored hash', async () => {
