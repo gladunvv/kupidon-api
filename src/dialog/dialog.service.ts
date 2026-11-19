@@ -264,11 +264,14 @@ export class DialogService {
     limit = 20,
   ): Promise<Paginated<unknown>> {
     const userObjectId = new Types.ObjectId(userId);
+    const blockedUserIds =
+      await this.blockService.getBlockedCounterpartIds(userObjectId);
 
     const [result] = await this.dialogModel
       .aggregate([
         dialogsForUserMatch(userObjectId),
         addPartnerId(userObjectId),
+        { $match: { partnerId: { $nin: blockedUserIds } } },
         lookupPartnerUser(PARTNER_FIELDS_LIST),
         {
           $lookup: {

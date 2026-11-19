@@ -24,6 +24,7 @@ describe('DialogService message pagination (real MongoDB)', () => {
   let moduleRef: TestingModule;
   let dialogService: DialogService;
   let userModel: Model<UserDocument>;
+  let blockService: BlockService;
   let dialogModel: Model<DialogDocument>;
   let messageModel: Model<MessageDocument>;
 
@@ -45,7 +46,7 @@ describe('DialogService message pagination (real MongoDB)', () => {
     const blockModel = moduleRef.get<Model<BlockDocument>>(
       getModelToken(Block.name),
     );
-    const blockService = new BlockService(blockModel);
+    blockService = new BlockService(blockModel);
 
     dialogService = new DialogService(
       dialogModel,
@@ -63,6 +64,82 @@ describe('DialogService message pagination (real MongoDB)', () => {
   afterAll(async () => {
     await closeMongoTestingModule(moduleRef);
   });
+
+  it.each(['outgoing', 'incoming'] as const)(
+    'hides %s blocks before dialog pagination and restores them after unblock',
+    async (direction) => {
+      const me = await userModel.create({ phone: '+79990006101', name: 'Me' });
+      const hidden = await userModel.create({
+        phone: '+79990006102',
+        name: 'Hidden',
+      });
+      const visible = await userModel.create({
+        phone: '+79990006103',
+        name: 'Visible',
+      });
+      const hiddenDialog = await dialogModel.create({
+        matchId: new Types.ObjectId(),
+        user1: me._id,
+        user2: hidden._id,
+        isActive: true,
+      });
+      const visibleDialog = await dialogModel.create({
+        matchId: new Types.ObjectId(),
+        user1: me._id,
+        user2: visible._id,
+        isActive: true,
+      });
+      await dialogService.sendMessage(
+        hiddenDialog._id.toString(),
+        hidden._id.toString(),
+        'private preview',
+      );
+      const [blocker, blocked] =
+        direction === 'outgoing' ? [me, hidden] : [hidden, me];
+      await blockService.block(blocker._id.toString(), blocked._id.toString());
+
+      const result = await dialogService.getUserDialogs(
+        me._id.toString(),
+        1,
+        1,
+      );
+      expect(result.items).toHaveLength(1);
+      expect((result.items[0] as { _id: Types.ObjectId })._id.toString()).toBe(
+        visibleDialog._id.toString(),
+      );
+      expect(result.pagination.total).toBe(1);
+      expect(result.pagination.hasNext).toBe(false);
+      const counterpart = await dialogService.getUserDialogs(
+        hidden._id.toString(),
+      );
+      expect(counterpart.items).toEqual([]);
+      expect(counterpart.pagination.total).toBe(0);
+
+      for (const user of [me, hidden]) {
+        await expect(
+          dialogService.getMessages(
+            hiddenDialog._id.toString(),
+            user._id.toString(),
+            { limit: 30 },
+          ),
+        ).rejects.toThrow('Dialog not found');
+        await expect(
+          dialogService.sendMessage(
+            hiddenDialog._id.toString(),
+            user._id.toString(),
+            'blocked',
+          ),
+        ).rejects.toThrow('Dialog not found');
+      }
+      await blockService.unblock(
+        blocker._id.toString(),
+        blocked._id.toString(),
+      );
+      const restored = await dialogService.getUserDialogs(me._id.toString());
+      expect(restored.items).toHaveLength(2);
+      expect(restored.pagination.total).toBe(2);
+    },
+  );
 
   it('walks every message exactly once, in stable order, after concurrent sends', async () => {
     const userA = await userModel.create({ phone: '+79990006001', name: 'A' });
